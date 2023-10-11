@@ -4,3 +4,7 @@ pdf_viewer.js中加入background（每一处修改均带有background，可直�
 pdf_viewer.js:6497 加入 ignoreDestinationZoom = true; 保证跳转时不会改变页面缩放比例
 
 pdf_viewer.js:1543-1550 将endOfContent改为startOfContent
+
+# ray's change
+
+pdf_viewer.js:1862 startOfContent 也被我干飞了
