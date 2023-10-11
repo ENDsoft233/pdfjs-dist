@@ -176,12 +176,12 @@ export function assert(cond: any, msg: any): void;
  * @type {any}
  */
 export const BaseException: any;
+export const BASELINE_FACTOR: number;
 export function bytesToString(bytes: any): string;
 export namespace CMapCompressionType {
     const NONE_2: number;
     export { NONE_2 as NONE };
     export const BINARY: number;
-    export const STREAM: number;
 }
 /**
  * Promise Capability object.
@@ -215,11 +215,11 @@ export namespace DocumentActionEventType {
     const WP: string;
     const DP: string;
 }
-export function escapeString(str: any): any;
 export class FeatureTest {
     static get isLittleEndian(): any;
     static get isEvalSupported(): any;
     static get isOffscreenCanvasSupported(): any;
+    static get platform(): any;
 }
 export const FONT_IDENTITY_MATRIX: number[];
 export namespace FontType {
@@ -260,7 +260,6 @@ export class InvalidPDFException extends InvalidPDFException_base {
 }
 export function isArrayBuffer(v: any): boolean;
 export function isArrayEqual(arr1: any, arr2: any): boolean;
-export function isAscii(str: any): boolean;
 export const LINE_DESCENT_FACTOR: 0.35;
 export const LINE_FACTOR: 1.35;
 declare const MissingPDFException_base: any;
@@ -348,11 +347,8 @@ export namespace OPS {
     const paintFormXObjectEnd: number;
     const beginGroup: number;
     const endGroup: number;
-    const beginAnnotations: number;
-    const endAnnotations: number;
     const beginAnnotation: number;
     const endAnnotation: number;
-    const paintJpegXObject: number;
     const paintImageMaskXObject: number;
     const paintImageMaskXObjectGroup: number;
     const paintImageXObject: number;
@@ -394,13 +390,14 @@ export namespace RenderingIntentFlag {
     export const DISPLAY: number;
     const PRINT_2: number;
     export { PRINT_2 as PRINT };
+    export const SAVE: number;
     export const ANNOTATIONS_FORMS: number;
     export const ANNOTATIONS_STORAGE: number;
     export const ANNOTATIONS_DISABLE: number;
     export const OPLIST: number;
 }
 export function setVerbosityLevel(level: any): void;
-export function shadow(obj: any, prop: any, value: any): any;
+export function shadow(obj: any, prop: any, value: any, nonSerializable?: boolean): any;
 export namespace StreamType {
     const UNKNOWN_1: string;
     export { UNKNOWN_1 as UNKNOWN };
@@ -417,7 +414,6 @@ export namespace StreamType {
 export function string32(value: any): string;
 export function stringToBytes(str: any): Uint8Array;
 export function stringToPDFString(str: any): string;
-export function stringToUTF16BEString(str: any): string;
 export function stringToUTF8String(str: any): string;
 export namespace TextRenderingMode {
     export const FILL: number;
@@ -446,13 +442,11 @@ export class UnknownErrorException extends UnknownErrorException_base {
 }
 export function unreachable(msg: any): void;
 export namespace UNSUPPORTED_FEATURES {
-    const unknown: string;
     const forms: string;
     const javaScript: string;
     const signatures: string;
     const smask: string;
     const shadingPattern: string;
-    const font: string;
     const errorTilingPattern: string;
     const errorExtGState: string;
     const errorXObject: string;
@@ -478,7 +472,6 @@ export class Util {
     static applyInverseTransform(p: any, m: any): number[];
     static getAxialAlignedBoundingBox(r: any, m: any): number[];
     static inverseTransform(m: any): number[];
-    static apply3dTransform(m: any, v: any): number[];
     static singularValueDecompose2dScale(m: any): number[];
     static normalizeRect(rect: any): any;
     static intersect(rect1: any, rect2: any): number[] | null;

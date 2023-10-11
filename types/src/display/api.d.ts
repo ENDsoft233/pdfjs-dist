@@ -133,6 +133,13 @@ export type DocumentInitParameters = {
      */
     isEvalSupported?: boolean | undefined;
     /**
+     * - Determines if we can use
+     * `OffscreenCanvas` in the worker. Primarily used to improve performance of
+     * image conversion/rendering.
+     * The default value is `true` in web environments and `false` in Node.js.
+     */
+    isOffscreenCanvasSupported?: boolean | undefined;
+    /**
      * - By default fonts are converted to
      * OpenType fonts and loaded via the Font Loading API or `@font-face` rules.
      * If disabled, fonts will be rendered using a built-in font renderer that
@@ -381,11 +388,6 @@ export type RenderParameters = {
      */
     transform?: any[] | undefined;
     /**
-     * - An object that has `beginLayout`,
-     * `endLayout` and `appendImage` functions.
-     */
-    imageLayer?: Object | undefined;
-    /**
      * - The factory instance that will be used
      * when creating canvases. The default value is {new DOMCanvasFactory()}.
      */
@@ -587,6 +589,10 @@ export let DefaultStandardFontDataFactory: typeof DOMStandardFontDataFactory;
  * @property {boolean} [isEvalSupported] - Determines if we can evaluate strings
  *   as JavaScript. Primarily used to improve performance of font rendering, and
  *   when parsing PDF functions. The default value is `true`.
+ * @property {boolean} [isOffscreenCanvasSupported] - Determines if we can use
+ *   `OffscreenCanvas` in the worker. Primarily used to improve performance of
+ *   image conversion/rendering.
+ *   The default value is `true` in web environments and `false` in Node.js.
  * @property {boolean} [disableFontFace] - By default fonts are converted to
  *   OpenType fonts and loaded via the Font Loading API or `@font-face` rules.
  *   If disabled, fonts will be rendered using a built-in font renderer that
@@ -637,12 +643,11 @@ export let DefaultStandardFontDataFactory: typeof DOMStandardFontDataFactory;
  */
 export function getDocument(src: GetDocumentParameters): PDFDocumentLoadingTask;
 export class LoopbackPort {
-    _listeners: any[];
-    _deferred: Promise<void>;
     postMessage(obj: any, transfers: any): void;
     addEventListener(name: any, listener: any): void;
     removeEventListener(name: any, listener: any): void;
     terminate(): void;
+    #private;
 }
 /**
  * Abstract class to support range requests file loading.
@@ -687,7 +692,7 @@ export class PDFDataRangeTransport {
  * after which individual pages can be rendered.
  */
 export class PDFDocumentLoadingTask {
-    static "__#16@#docId": number;
+    static "__#15@#docId": number;
     _capability: import("../shared/util.js").PromiseCapability;
     _transport: any;
     _worker: any;
@@ -720,7 +725,12 @@ export class PDFDocumentLoadingTask {
      * The callback receives an {@link UNSUPPORTED_FEATURES} argument.
      * @type {function}
      */
-    onUnsupportedFeature: Function;
+    set onUnsupportedFeature(arg: Function | null);
+    /**
+     * @type {function | null} The current callback used with unsupported
+     * features.
+     */
+    get onUnsupportedFeature(): Function | null;
     /**
      * Promise for document loading task completion.
      * @type {Promise<PDFDocumentProxy>}
@@ -732,6 +742,7 @@ export class PDFDocumentLoadingTask {
      *   completed.
      */
     destroy(): Promise<void>;
+    #private;
 }
 /**
  * Proxy to a `PDFDocument` in the worker thread.
@@ -948,9 +959,14 @@ export class PDFDocumentProxy {
     } | null>;
     /**
      * @returns {Promise<Uint8Array>} A promise that is resolved with a
-     *   {Uint8Array} that has the raw data from the PDF.
+     *   {Uint8Array} containing the raw data of the PDF document.
      */
     getData(): Promise<Uint8Array>;
+    /**
+     * @returns {Promise<Uint8Array>} A promise that is resolved with a
+     *   {Uint8Array} containing the full data of the saved document.
+     */
+    saveDocument(): Promise<Uint8Array>;
     /**
      * @returns {Promise<{ length: number }>} A promise that is resolved when the
      *   document's data is loaded. It is resolved with an {Object} that contains
@@ -985,11 +1001,6 @@ export class PDFDocumentProxy {
      * @type {PDFDocumentLoadingTask} The loadingTask for the current document.
      */
     get loadingTask(): PDFDocumentLoadingTask;
-    /**
-     * @returns {Promise<Uint8Array>} A promise that is resolved with a
-     *   {Uint8Array} containing the full data of the saved document.
-     */
-    saveDocument(): Promise<Uint8Array>;
     /**
      * @returns {Promise<Object<string, Array<Object>> | null>} A promise that is
      *   resolved with an {Object} containing /AcroForm field data for the JS
@@ -1105,8 +1116,6 @@ export class PDFDocumentProxy {
  *   The default value is `AnnotationMode.ENABLE`.
  * @property {Array<any>} [transform] - Additional transform, applied just
  *   before viewport transform.
- * @property {Object} [imageLayer] - An object that has `beginLayout`,
- *   `endLayout` and `appendImage` functions.
  * @property {Object} [canvasFactory] - The factory instance that will be used
  *   when creating canvases. The default value is {new DOMCanvasFactory()}.
  * @property {Object | string} [background] - Background to use for the canvas.
@@ -1192,7 +1201,6 @@ export class PDFPageProxy {
     cleanupAfterRender: boolean;
     pendingCleanup: boolean;
     _intentStates: Map<any, any>;
-    _annotationPromises: Map<any, any>;
     destroyed: boolean;
     /**
      * @type {number} Page number of the page. First page is 1.
@@ -1233,6 +1241,10 @@ export class PDFPageProxy {
      */
     getJSActions(): Promise<Object>;
     /**
+     * @type {boolean} True if only XFA form.
+     */
+    get isPureXfa(): boolean;
+    /**
      * @returns {Promise<Object | null>} A promise that is resolved with
      *   an {Object} with a fake DOM object (a tree structure where elements
      *   are {Object} with a name, attributes (class, style, ...), value and
@@ -1246,7 +1258,7 @@ export class PDFPageProxy {
      * @returns {RenderTask} An object that contains a promise that is
      *   resolved when the page finishes rendering.
      */
-    render({ canvasContext, viewport, intent, annotationMode, transform, imageLayer, canvasFactory, background, optionalContentConfigPromise, annotationCanvasMap, pageColors, printAnnotationStorage, }: RenderParameters, ...args: any[]): RenderTask;
+    render({ canvasContext, viewport, intent, annotationMode, transform, canvasFactory, background, optionalContentConfigPromise, annotationCanvasMap, pageColors, printAnnotationStorage, }: RenderParameters): RenderTask;
     /**
      * @param {GetOperatorListParameters} params - Page getOperatorList
      *   parameters.
@@ -1282,8 +1294,6 @@ export class PDFPageProxy {
      * @private
      */
     private _destroy;
-    _jsActionsPromise: any;
-    _structTreePromise: any;
     /**
      * Cleans up resources allocated by the page.
      *
@@ -1400,8 +1410,10 @@ export class RenderTask {
      * Cancels the rendering task. If the task is currently rendering it will
      * not be cancelled until graphics pauses with a timeout. The promise that
      * this object extends will be rejected when cancelled.
+     *
+     * @param {number} [extraDelay]
      */
-    cancel(): void;
+    cancel(extraDelay?: number | undefined): void;
     /**
      * Whether form fields are rendered separately from the main operatorList.
      * @type {boolean}
