@@ -56,11 +56,13 @@
 }
 
 .textLayer ::-moz-selection {
-  background: rgba(0, 0, 255, 1);
+  /* background: rgba(0, 0, 255, 1); */
+  background: #ff3c019e;
 }
 
 .textLayer ::selection {
-  background: rgba(0, 0, 255, 1);
+  /* background: rgba(0, 0, 255, 1); */
+  background: #ff3c019e;
 }
 
 .textLayer .endOfContent {

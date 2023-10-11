@@ -1540,11 +1540,14 @@ class TextLayerBuilder {
   _finishRendering() {
     this.renderingDone = true;
 
-    if (!this.enhanceTextSelection) {
-      const endOfContent = document.createElement("div");
-      endOfContent.className = "endOfContent";
-      this.textLayerDiv.appendChild(endOfContent);
-    }
+    // if (!this.enhanceTextSelection) {
+    //   const endOfContent = document.createElement("div");
+    //   endOfContent.className = "endOfContent";
+    //   this.textLayerDiv.appendChild(endOfContent);
+    // }
+    let startDiv = document.createElement('div');
+    startDiv.className = 'startOfContent';
+    this.textLayerDiv.insertBefore(startDiv, this.textLayerDiv.children[0])
 
     this.eventBus.dispatch("textlayerrendered", {
       source: this,
@@ -4342,6 +4345,7 @@ class PDFPageView {
     const container = options.container;
     const defaultViewport = options.defaultViewport;
     this.id = options.id;
+    this.background = options.background;
     this.renderingId = "page" + this.id;
     this.pdfPage = null;
     this.pageLabel = null;
@@ -4894,7 +4898,8 @@ class PDFPageView {
       viewport: this.viewport,
       enableWebGL: this.enableWebGL,
       renderInteractiveForms: this.renderInteractiveForms,
-      optionalContentConfigPromise: this._optionalContentConfigPromise
+      optionalContentConfigPromise: this._optionalContentConfigPromise,
+      background: this.background,
     };
     const renderTask = this.pdfPage.render(renderContext);
 
@@ -6105,7 +6110,8 @@ class BaseViewer {
     return this._onePageRenderedCapability.promise;
   }
 
-  setDocument(pdfDocument) {
+  setDocument(pdfDocument, background) {
+    this.background = background;
     if (this.pdfDocument) {
       this.eventBus.dispatch("pagesdestroy", {
         source: this
@@ -6199,6 +6205,7 @@ class BaseViewer {
           useOnlyCssZoom: this.useOnlyCssZoom,
           maxCanvasPixels: this.maxCanvasPixels,
           l10n: this.l10n,
+          background: this.background,
           enableScripting: this.enableScripting
         });
 
@@ -6490,7 +6497,7 @@ class BaseViewer {
     if (!this.pdfDocument) {
       return;
     }
-
+    ignoreDestinationZoom = true;
     const pageView = Number.isInteger(pageNumber) && this._pages[pageNumber - 1];
 
     if (!pageView) {
