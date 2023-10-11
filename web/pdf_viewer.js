@@ -184,6 +184,7 @@ module.exports = pdfjsLib;
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
+exports.fixupLangCode = fixupLangCode;
 exports.getL10nFallback = getL10nFallback;
 exports.NullL10n = void 0;
 const DEFAULT_L10N_STRINGS = {
@@ -253,6 +254,27 @@ function getL10nFallback(key, args) {
   return DEFAULT_L10N_STRINGS[key] || "";
 }
 
+const PARTIAL_LANG_CODES = {
+  en: "en-US",
+  es: "es-ES",
+  fy: "fy-NL",
+  ga: "ga-IE",
+  gu: "gu-IN",
+  hi: "hi-IN",
+  hy: "hy-AM",
+  nb: "nb-NO",
+  ne: "ne-NP",
+  nn: "nn-NO",
+  pa: "pa-IN",
+  pt: "pt-PT",
+  sv: "sv-SE",
+  zh: "zh-CN"
+};
+
+function fixupLangCode(langCode) {
+  return PARTIAL_LANG_CODES[langCode?.toLowerCase()] || langCode;
+}
+
 function formatL10nValue(text, args) {
   if (!args) {
     return text;
@@ -299,13 +321,12 @@ class PDFLinkService {
     eventBus,
     externalLinkTarget = null,
     externalLinkRel = null,
-    externalLinkEnabled = true,
     ignoreDestinationZoom = false
   } = {}) {
     this.eventBus = eventBus;
     this.externalLinkTarget = externalLinkTarget;
     this.externalLinkRel = externalLinkRel;
-    this.externalLinkEnabled = externalLinkEnabled;
+    this.externalLinkEnabled = true;
     this._ignoreDestinationZoom = ignoreDestinationZoom;
     this.baseUrl = null;
     this.pdfDocument = null;
@@ -352,7 +373,7 @@ class PDFLinkService {
     const destRef = explicitDest[0];
     let pageNumber;
 
-    if (destRef instanceof Object) {
+    if (typeof destRef === "object" && destRef !== null) {
       pageNumber = this._cachedPageNumber(destRef);
 
       if (pageNumber === null) {
@@ -850,7 +871,7 @@ function getOutputScale(ctx) {
   };
 }
 
-function scrollIntoView(element, spot, skipOverflowHiddenElements = false) {
+function scrollIntoView(element, spot, scrollMatches = false) {
   let parent = element.offsetParent;
 
   if (!parent) {
@@ -861,12 +882,7 @@ function scrollIntoView(element, spot, skipOverflowHiddenElements = false) {
   let offsetY = element.offsetTop + element.clientTop;
   let offsetX = element.offsetLeft + element.clientLeft;
 
-  while (parent.clientHeight === parent.scrollHeight && parent.clientWidth === parent.scrollWidth || skipOverflowHiddenElements && getComputedStyle(parent).overflow === "hidden") {
-    if (parent.dataset._scaleY) {
-      offsetY /= parent.dataset._scaleY;
-      offsetX /= parent.dataset._scaleX;
-    }
-
+  while (parent.clientHeight === parent.scrollHeight && parent.clientWidth === parent.scrollWidth || scrollMatches && (parent.classList.contains("markedContent") || getComputedStyle(parent).overflow === "hidden")) {
     offsetY += parent.offsetTop;
     offsetX += parent.offsetLeft;
     parent = parent.offsetParent;
@@ -1684,7 +1700,7 @@ class TextLayerBuilder {
     function beginText(begin, className) {
       const divIdx = begin.divIdx;
       textDivs[divIdx].textContent = "";
-      appendTextToDiv(divIdx, 0, begin.offset, className);
+      return appendTextToDiv(divIdx, 0, begin.offset, className);
     }
 
     function appendTextToDiv(divIdx, fromOffset, toOffset, className) {
@@ -1694,13 +1710,14 @@ class TextLayerBuilder {
 
       if (className) {
         const span = document.createElement("span");
-        span.className = className;
+        span.className = `${className} appended`;
         span.appendChild(node);
         div.appendChild(span);
-        return;
+        return className.includes("selected") ? span.offsetLeft : 0;
       }
 
       div.appendChild(node);
+      return 0;
     }
 
     let i0 = selectedMatchIdx,
@@ -1719,14 +1736,7 @@ class TextLayerBuilder {
       const end = match.end;
       const isSelected = isSelectedPage && i === selectedMatchIdx;
       const highlightSuffix = isSelected ? " selected" : "";
-
-      if (isSelected) {
-        findController.scrollMatchIntoView({
-          element: textDivs[begin.divIdx],
-          pageIndex: pageIdx,
-          matchIndex: selectedMatchIdx
-        });
-      }
+      let selectedLeft = 0;
 
       if (!prevEnd || begin.divIdx !== prevEnd.divIdx) {
         if (prevEnd !== null) {
@@ -1739,9 +1749,9 @@ class TextLayerBuilder {
       }
 
       if (begin.divIdx === end.divIdx) {
-        appendTextToDiv(begin.divIdx, begin.offset, end.offset, "highlight" + highlightSuffix);
+        selectedLeft = appendTextToDiv(begin.divIdx, begin.offset, end.offset, "highlight" + highlightSuffix);
       } else {
-        appendTextToDiv(begin.divIdx, begin.offset, infinity.offset, "highlight begin" + highlightSuffix);
+        selectedLeft = appendTextToDiv(begin.divIdx, begin.offset, infinity.offset, "highlight begin" + highlightSuffix);
 
         for (let n0 = begin.divIdx + 1, n1 = end.divIdx; n0 < n1; n0++) {
           textDivs[n0].className = "highlight middle" + highlightSuffix;
@@ -1751,6 +1761,15 @@ class TextLayerBuilder {
       }
 
       prevEnd = end;
+
+      if (isSelected) {
+        findController.scrollMatchIntoView({
+          element: textDivs[begin.divIdx],
+          selectedLeft,
+          pageIndex: pageIdx,
+          matchIndex: selectedMatchIdx
+        });
+      }
     }
 
     if (prevEnd) {
@@ -2026,7 +2045,7 @@ class GenericL10n {
   constructor(lang) {
     this._lang = lang;
     this._ready = new Promise((resolve, reject) => {
-      webL10n.setLanguage(lang, () => {
+      webL10n.setLanguage((0, _l10n_utils.fixupLangCode)(lang), () => {
         resolve(webL10n);
       });
     });
@@ -2906,6 +2925,7 @@ const FIND_TIMEOUT = 250;
 const MATCH_SCROLL_OFFSET_TOP = -50;
 const MATCH_SCROLL_OFFSET_LEFT = -400;
 const CHARACTERS_TO_NORMALIZE = {
+  "\u2010": "-",
   "\u2018": "'",
   "\u2019": "'",
   "\u201A": "'",
@@ -3074,6 +3094,7 @@ class PDFFindController {
 
   scrollMatchIntoView({
     element = null,
+    selectedLeft = 0,
     pageIndex = -1,
     matchIndex = -1
   }) {
@@ -3088,7 +3109,7 @@ class PDFFindController {
     this._scrollMatches = false;
     const spot = {
       top: MATCH_SCROLL_OFFSET_TOP,
-      left: MATCH_SCROLL_OFFSET_LEFT
+      left: selectedLeft + MATCH_SCROLL_OFFSET_LEFT
     };
     (0, _ui_utils.scrollIntoView)(element, spot, true);
   }
@@ -4458,22 +4479,32 @@ class PDFPageView {
     this.zoomLayer = null;
   }
 
-  reset(keepZoomLayer = false, keepAnnotations = false) {
-    this.cancelRendering(keepAnnotations);
+  reset({
+    keepZoomLayer = false,
+    keepAnnotationLayer = false,
+    keepXfaLayer = false
+  } = {}) {
+    this.cancelRendering({
+      keepAnnotationLayer,
+      keepXfaLayer
+    });
     this.renderingState = _pdf_rendering_queue.RenderingStates.INITIAL;
     const div = this.div;
     div.style.width = Math.floor(this.viewport.width) + "px";
     div.style.height = Math.floor(this.viewport.height) + "px";
-    const childNodes = div.childNodes;
-    const currentZoomLayerNode = keepZoomLayer && this.zoomLayer || null;
-    const currentAnnotationNode = keepAnnotations && this.annotationLayer?.div || null;
-    const currentXfaLayerNode = this.xfaLayer?.div || null;
+    const childNodes = div.childNodes,
+          zoomLayerNode = keepZoomLayer && this.zoomLayer || null,
+          annotationLayerNode = keepAnnotationLayer && this.annotationLayer?.div || null,
+          xfaLayerNode = keepXfaLayer && this.xfaLayer?.div || null;
 
     for (let i = childNodes.length - 1; i >= 0; i--) {
       const node = childNodes[i];
 
-      if (currentZoomLayerNode === node || currentAnnotationNode === node || currentXfaLayerNode === node) {
-        continue;
+      switch (node) {
+        case zoomLayerNode:
+        case annotationLayerNode:
+        case xfaLayerNode:
+          continue;
       }
 
       div.removeChild(node);
@@ -4481,14 +4512,15 @@ class PDFPageView {
 
     div.removeAttribute("data-loaded");
 
-    if (currentAnnotationNode) {
+    if (annotationLayerNode) {
       this.annotationLayer.hide();
-    } else if (this.annotationLayer) {
-      this.annotationLayer.cancel();
-      this.annotationLayer = null;
     }
 
-    if (!currentZoomLayerNode) {
+    if (xfaLayerNode) {
+      this.xfaLayer.hide();
+    }
+
+    if (!zoomLayerNode) {
       if (this.canvas) {
         this.paintedViewportMap.delete(this.canvas);
         this.canvas.width = 0;
@@ -4531,7 +4563,11 @@ class PDFPageView {
     });
 
     if (this.svg) {
-      this.cssTransform(this.svg, true);
+      this.cssTransform({
+        target: this.svg,
+        redrawAnnotationLayer: true,
+        redrawXfaLayer: true
+      });
       this.eventBus.dispatch("pagerendered", {
         source: this,
         pageNumber: this.id,
@@ -4554,7 +4590,11 @@ class PDFPageView {
 
     if (this.canvas) {
       if (this.useOnlyCssZoom || this.hasRestrictedScaling && isScalingRestricted) {
-        this.cssTransform(this.canvas, true);
+        this.cssTransform({
+          target: this.canvas,
+          redrawAnnotationLayer: true,
+          redrawXfaLayer: true
+        });
         this.eventBus.dispatch("pagerendered", {
           source: this,
           pageNumber: this.id,
@@ -4572,13 +4612,22 @@ class PDFPageView {
     }
 
     if (this.zoomLayer) {
-      this.cssTransform(this.zoomLayer.firstChild);
+      this.cssTransform({
+        target: this.zoomLayer.firstChild
+      });
     }
 
-    this.reset(true, true);
+    this.reset({
+      keepZoomLayer: true,
+      keepAnnotationLayer: true,
+      keepXfaLayer: true
+    });
   }
 
-  cancelRendering(keepAnnotations = false) {
+  cancelRendering({
+    keepAnnotationLayer = false,
+    keepXfaLayer = false
+  } = {}) {
     if (this.paintTask) {
       this.paintTask.cancel();
       this.paintTask = null;
@@ -4591,9 +4640,14 @@ class PDFPageView {
       this.textLayer = null;
     }
 
-    if (!keepAnnotations && this.annotationLayer) {
+    if (this.annotationLayer && (!keepAnnotationLayer || !this.annotationLayer.div)) {
       this.annotationLayer.cancel();
       this.annotationLayer = null;
+    }
+
+    if (this.xfaLayer && (!keepXfaLayer || !this.xfaLayer.div)) {
+      this.xfaLayer.cancel();
+      this.xfaLayer = null;
     }
 
     if (this._onTextLayerRendered) {
@@ -4603,7 +4657,11 @@ class PDFPageView {
     }
   }
 
-  cssTransform(target, redrawAnnotations = false) {
+  cssTransform({
+    target,
+    redrawAnnotationLayer = false,
+    redrawXfaLayer = false
+  }) {
     const width = this.viewport.width;
     const height = this.viewport.height;
     const div = this.div;
@@ -4663,11 +4721,11 @@ class PDFPageView {
       textLayerDiv.style.transformOrigin = "0% 0%";
     }
 
-    if (redrawAnnotations && this.annotationLayer) {
+    if (redrawAnnotationLayer && this.annotationLayer) {
       this._renderAnnotationLayer();
     }
 
-    if (this.xfaLayer) {
+    if (redrawXfaLayer && this.xfaLayer) {
       this._renderXfaLayer();
     }
   }
@@ -4736,6 +4794,11 @@ class PDFPageView {
     }
 
     this.textLayer = textLayer;
+
+    if (this.xfaLayer?.div) {
+      div.appendChild(this.xfaLayer.div);
+    }
+
     let renderContinueCallback = null;
 
     if (this.renderingQueue) {
@@ -5186,7 +5249,6 @@ class PDFScriptingManager {
     this._destroyCapability = null;
     this._scripting = null;
     this._mouseState = Object.create(null);
-    this._pageEventsReady = false;
     this._ready = false;
     this._eventBus = eventBus;
     this._sandboxBundleSrc = sandboxBundleSrc;
@@ -5229,7 +5291,13 @@ class PDFScriptingManager {
       return;
     }
 
-    this._scripting = this._createScripting();
+    try {
+      this._scripting = this._createScripting();
+    } catch (error) {
+      console.error(`PDFScriptingManager.setDocument: "${error?.message}".`);
+      await this._destroyScripting();
+      return;
+    }
 
     this._internalEvents.set("updatefromsandbox", event => {
       if (event?.source !== window) {
@@ -5472,10 +5540,9 @@ class PDFScriptingManager {
 
     if (initialize) {
       this._closeCapability = (0, _pdfjsLib.createPromiseCapability)();
-      this._pageEventsReady = true;
     }
 
-    if (!this._pageEventsReady) {
+    if (!this._closeCapability) {
       return;
     }
 
@@ -5511,7 +5578,7 @@ class PDFScriptingManager {
     const pdfDocument = this._pdfDocument,
           visitedPages = this._visitedPages;
 
-    if (!this._pageEventsReady) {
+    if (!this._closeCapability) {
       return;
     }
 
@@ -5609,7 +5676,6 @@ class PDFScriptingManager {
 
     this._scripting = null;
     delete this._mouseState.isDown;
-    this._pageEventsReady = false;
     this._ready = false;
     this._destroyCapability?.resolve();
   }
@@ -5908,7 +5974,7 @@ class BaseViewer {
       throw new Error("Cannot initialize BaseViewer.");
     }
 
-    const viewerVersion = '2.9.359';
+    const viewerVersion = '2.10.377';
 
     if (_pdfjsLib.version !== viewerVersion) {
       throw new Error(`The API version "${_pdfjsLib.version}" does not match the Viewer version "${viewerVersion}".`);
@@ -7393,16 +7459,38 @@ class XfaLayerBuilder {
   constructor({
     pageDiv,
     pdfPage,
+    xfaHtml,
     annotationStorage
   }) {
     this.pageDiv = pageDiv;
     this.pdfPage = pdfPage;
+    this.xfaHtml = xfaHtml;
     this.annotationStorage = annotationStorage;
     this.div = null;
     this._cancelled = false;
   }
 
   render(viewport, intent = "display") {
+    if (intent === "print") {
+      const parameters = {
+        viewport: viewport.clone({
+          dontFlip: true
+        }),
+        div: this.div,
+        xfa: this.xfaHtml,
+        page: null,
+        annotationStorage: this.annotationStorage,
+        intent
+      };
+      const div = document.createElement("div");
+      this.pageDiv.appendChild(div);
+      parameters.div = div;
+
+      _pdfjsLib.XfaLayer.render(parameters);
+
+      return Promise.resolve();
+    }
+
     return this.pdfPage.getXfa().then(xfa => {
       if (this._cancelled) {
         return;
@@ -7415,7 +7503,8 @@ class XfaLayerBuilder {
         div: this.div,
         xfa,
         page: this.pdfPage,
-        annotationStorage: this.annotationStorage
+        annotationStorage: this.annotationStorage,
+        intent
       };
 
       if (this.div) {
@@ -7449,11 +7538,12 @@ class XfaLayerBuilder {
 exports.XfaLayerBuilder = XfaLayerBuilder;
 
 class DefaultXfaLayerFactory {
-  createXfaLayerBuilder(pageDiv, pdfPage, annotationStorage = null) {
+  createXfaLayerBuilder(pageDiv, pdfPage, annotationStorage = null, xfaHtml = null) {
     return new XfaLayerBuilder({
       pageDiv,
       pdfPage,
-      annotationStorage
+      annotationStorage,
+      xfaHtml
     });
   }
 
@@ -7715,8 +7805,8 @@ var _pdf_single_page_viewer = __w_pdfjs_require__(18);
 
 var _pdf_viewer = __w_pdfjs_require__(22);
 
-const pdfjsVersion = '2.9.359';
-const pdfjsBuild = 'e667c8cbc';
+const pdfjsVersion = '2.10.377';
+const pdfjsBuild = '156762c48';
 })();
 
 /******/ 	return __webpack_exports__;
