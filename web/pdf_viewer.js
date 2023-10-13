@@ -3519,6 +3519,7 @@ class PDFPageView {
     const container = options.container;
     const defaultViewport = options.defaultViewport;
     this.id = options.id;
+    this.background = options.background;
     this.renderingId = "page" + this.id;
     this.#layerProperties = options.layerProperties || DEFAULT_LAYER_PROPERTIES;
     this.pdfPage = null;
@@ -4236,6 +4237,7 @@ class PDFPageView {
       annotationMode: this.#annotationMode,
       optionalContentConfigPromise: this._optionalContentConfigPromise,
       annotationCanvasMap: this._annotationCanvasMap,
+      background: this.background,
       pageColors: this.pageColors
     };
     const renderTask = this.pdfPage.render(renderContext);
@@ -5446,7 +5448,8 @@ class PDFScriptingManager {
   setViewer(pdfViewer) {
     this._pdfViewer = pdfViewer;
   }
-  async setDocument(pdfDocument) {
+  async setDocument(pdfDocument, background) {
+    this.background = background;
     if (this._pdfDocument) {
       await this._destroyScripting();
     }
@@ -6330,7 +6333,8 @@ class PDFViewer {
           maxCanvasPixels: this.maxCanvasPixels,
           pageColors: this.pageColors,
           l10n: this.l10n,
-          layerProperties
+          layerProperties,
+          background: this.background,
         });
         this._pages.push(pageView);
       }

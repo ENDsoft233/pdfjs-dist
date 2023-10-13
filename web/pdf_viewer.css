@@ -75,13 +75,13 @@
 }
 
 .textLayer ::-moz-selection {
-  background: blue;
-  background: AccentColor;
+  /* background: rgba(0, 0, 255, 1); */
+  background: #ff3c019e;
 }
 
 .textLayer ::selection {
-  background: blue;
-  background: AccentColor;
+  /* background: rgba(0, 0, 255, 1); */
+  background: #ff3c019e;
 }
 
 /* Avoids https://github.com/mozilla/pdf.js/issues/13840 in Chrome */
