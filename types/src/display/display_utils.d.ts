@@ -136,12 +136,6 @@ export function isDataScheme(url: any): boolean;
 export function isPdfFile(filename: any): boolean;
 export function isValidFetchUrl(url: any, baseUrl: any): boolean;
 /**
- * @param {string} src
- * @param {boolean} [removeScriptElement]
- * @returns {Promise<void>}
- */
-export function loadScript(src: string, removeScriptElement?: boolean | undefined): Promise<void>;
-/**
  * Event handler to suppress context menu.
  */
 export function noContextMenu(e: any): void;
