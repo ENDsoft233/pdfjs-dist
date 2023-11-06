@@ -189,10 +189,12 @@ export class PDFViewer {
     isOffscreenCanvasSupported: boolean;
     maxCanvasPixels: number | undefined;
     l10n: {
-        getLanguage(): Promise<string>;
-        getDirection(): Promise<string>;
-        get(key: any, args?: null, fallback?: any): Promise<any>;
-        translate(element: any): Promise<void>;
+        getLanguage(): any;
+        getDirection(): any;
+        get(ids: any, args: null | undefined, fallback: any): Promise<any>;
+        translate(element: any): Promise<any>;
+        pause(): any;
+        resume(): any;
     };
     pageColors: Object | null;
     defaultRenderingQueue: boolean;
@@ -273,6 +275,7 @@ export class PDFViewer {
     get firstPagePromise(): Promise<any> | null;
     get onePageRendered(): Promise<any> | null;
     get pagesPromise(): Promise<any> | null;
+    get _layerProperties(): any;
     getAllText(): Promise<string | null>;
     /**
      * @param {PDFDocumentProxy} pdfDocument

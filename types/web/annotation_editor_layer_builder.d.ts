@@ -30,10 +30,12 @@ export class AnnotationEditorLayerBuilder {
     pdfPage: import("../src/display/api").PDFPageProxy;
     accessibilityManager: import("./text_accessibility.js").TextAccessibilityManager | undefined;
     l10n: {
-        getLanguage(): Promise<string>;
-        getDirection(): Promise<string>;
-        get(key: any, args?: null, fallback?: any): Promise<any>;
-        translate(element: any): Promise<void>;
+        getLanguage(): any;
+        getDirection(): any;
+        get(ids: any, args: null | undefined, fallback: any): Promise<any>;
+        translate(element: any): Promise<any>;
+        pause(): any;
+        resume(): any;
     };
     annotationEditorLayer: AnnotationEditorLayer | null;
     div: HTMLDivElement | null;

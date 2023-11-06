@@ -1344,7 +1344,7 @@ export class PDFWorker {
      * @type {string}
      */
     static get workerSrc(): string;
-    static get _mainThreadWorkerMessageHandler(): any;
+    static get "__#36@#mainThreadWorkerMessageHandler"(): any;
     static get _setupFakeWorkerGlobal(): any;
     constructor({ name, port, verbosity, }?: {
         name?: null | undefined;
@@ -1383,7 +1383,6 @@ export class PDFWorker {
 }
 export namespace PDFWorkerUtil {
     let isWorkerDisabled: boolean;
-    let fallbackWorkerSrc: null;
     let fakeWorkerId: number;
 }
 /**
@@ -1418,7 +1417,6 @@ export class RenderTask {
     get separateAnnots(): boolean;
     #private;
 }
-import { SVGGraphics } from "./svg";
 /** @type {string} */
 export const version: string;
 import { PageViewport } from "./display_utils.js";
@@ -1470,4 +1468,4 @@ declare class PDFObjects {
     #private;
 }
 import { MessageHandler } from "../shared/message_handler.js";
-export { SVGGraphics };
+export {};

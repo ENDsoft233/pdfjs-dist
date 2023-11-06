@@ -102,8 +102,11 @@ export class AnnotationEditorUIManager {
      * Change the editor mode (None, FreeText, Ink, ...)
      * @param {number} mode
      * @param {string|null} editId
+     * @param {boolean} [isFromKeyboard] - true if the mode change is due to a
+     *   keyboard action.
      */
-    updateMode(mode: number, editId?: string | null): void;
+    updateMode(mode: number, editId?: string | null, isFromKeyboard?: boolean | undefined): void;
+    addNewEditorFromKeyboard(): void;
     /**
      * Update the toolbar if it's required to reflect the tool currently used.
      * @param {number} mode
@@ -175,12 +178,14 @@ export class AnnotationEditorUIManager {
      * @param {AnnotationEditor} editor
      */
     isSelected(editor: AnnotationEditor): boolean;
+    get firstSelectedEditor(): any;
     /**
      * Unselect an editor.
      * @param {AnnotationEditor} editor
      */
     unselect(editor: AnnotationEditor): void;
     get hasSelection(): boolean;
+    get isEnterHandled(): any;
     /**
      * Undo the last command.
      */
@@ -230,6 +235,7 @@ export class AnnotationEditorUIManager {
      * @param {AnnotationEditor} editor
      */
     rebuild(editor: AnnotationEditor): void;
+    get isEditorHandlingKeyboard(): any;
     /**
      * Is the current editor the one passed as argument?
      * @param {AnnotationEditor} editor

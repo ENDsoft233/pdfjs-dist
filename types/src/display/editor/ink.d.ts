@@ -6,6 +6,7 @@ export class InkEditor extends AnnotationEditor {
     static _defaultOpacity: number;
     static _defaultThickness: number;
     static _type: string;
+    static _editorType: number;
     /** @inheritdoc */
     static initialize(l10n: any): void;
     /** @inheritdoc */
@@ -60,8 +61,6 @@ export class InkEditor extends AnnotationEditor {
      */
     canvasPointerleave(event: PointerEvent): void;
     ctx: CanvasRenderingContext2D | null | undefined;
-    /** @inheritdoc */
-    render(): HTMLDivElement | null;
     /**
      * When the dimensions of the div change the inner canvas must
      * renew its dimensions, hence it must redraw its own contents.
