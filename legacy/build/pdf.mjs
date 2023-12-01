@@ -1471,9 +1471,9 @@ module.exports = function (obj) {
 var check = function (it) {
  return it && it.Math === Math && it;
 };
-module.exports = check(typeof globalThis == 'object' && globalThis) || check(typeof window == 'object' && window) || check(typeof self == 'object' && self) || check(typeof global == 'object' && global) || (function () {
+module.exports = check(typeof globalThis == 'object' && globalThis) || check(typeof window == 'object' && window) || check(typeof self == 'object' && self) || check(typeof global == 'object' && global) || check(typeof this == 'object' && this) || (function () {
  return this;
-}()) || this || Function('return this')();
+}()) || Function('return this')();
 
 /***/ }),
 
@@ -2926,10 +2926,10 @@ var store = __webpack_require__(7542);
 (module.exports = function (key, value) {
  return store[key] || (store[key] = value !== undefined ? value : {});
 })('versions', []).push({
- version: '3.33.2',
+ version: '3.33.3',
  mode: IS_PURE ? 'pure' : 'global',
  copyright: '© 2014-2023 Denis Pushkarev (zloirock.ru)',
- license: 'https://github.com/zloirock/core-js/blob/v3.33.2/LICENSE',
+ license: 'https://github.com/zloirock/core-js/blob/v3.33.3/LICENSE',
  source: 'https://github.com/zloirock/core-js'
 });
 
@@ -5594,7 +5594,9 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
           }
           elementData.lastCommittedValue = target.value;
           elementData.commitKey = 1;
-          elementData.focused = true;
+          if (!this.data.actions?.Focus) {
+            elementData.focused = true;
+          }
         });
         element.addEventListener("updatefromsandbox", jsEvent => {
           this.showElementAndHideCanvas(jsEvent.target);
@@ -5698,7 +5700,9 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
           if (!elementData.focused || !event.relatedTarget) {
             return;
           }
-          elementData.focused = false;
+          if (!this.data.actions?.Blur) {
+            elementData.focused = false;
+          }
           const {
             value
           } = event.target;
@@ -5903,6 +5907,13 @@ class RadioButtonWidgetAnnotationElement extends WidgetAnnotationElement {
       storage.setValue(id, {
         value
       });
+    }
+    if (value) {
+      for (const radio of this._getElementsByName(data.fieldName, id)) {
+        storage.setValue(radio.id, {
+          value: false
+        });
+      }
     }
     const element = document.createElement("input");
     GetElementsByNameSet.add(element);
@@ -7006,7 +7017,7 @@ class AnnotationLayer {
 /* harmony import */ var core_js_modules_esnext_iterator_map_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(7944);
 /* harmony import */ var core_js_modules_web_dom_exception_stack_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(9709);
 /* harmony import */ var _shared_util_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(3266);
-/* harmony import */ var _editor_editor_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(7682);
+/* harmony import */ var _editor_editor_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(5796);
 /* harmony import */ var _shared_murmurhash3_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(2825);
 
 
@@ -7345,7 +7356,7 @@ function getDocument(src) {
   }
   const fetchDocParams = {
     docId,
-    apiVersion: '4.0.189',
+    apiVersion: '4.0.269',
     data,
     password,
     disableAutoFetch,
@@ -8150,7 +8161,9 @@ const PDFWorkerUtil = {
   };
   PDFWorkerUtil.createCDNWrapper = function (url) {
     const wrapper = `await import("${url}");`;
-    return URL.createObjectURL(new Blob([wrapper]));
+    return URL.createObjectURL(new Blob([wrapper], {
+      type: "text/javascript"
+    }));
   };
 }
 class PDFWorker {
@@ -9108,8 +9121,8 @@ class InternalRenderTask {
     }
   }
 }
-const version = '4.0.189';
-const build = '50f52b43a';
+const version = '4.0.269';
+const build = 'f4b396f6c';
 
 __webpack_async_result__();
 } catch(e) { __webpack_async_result__(e); } });
@@ -12132,6 +12145,7 @@ for (const op in util.OPS) {
 /* harmony export */   PixelsPerInch: () => (/* binding */ PixelsPerInch),
 /* harmony export */   RenderingCancelledException: () => (/* binding */ RenderingCancelledException),
 /* harmony export */   StatTimer: () => (/* binding */ StatTimer),
+/* harmony export */   fetchData: () => (/* binding */ fetchData),
 /* harmony export */   getColorValues: () => (/* binding */ getColorValues),
 /* harmony export */   getCurrentTransform: () => (/* binding */ getCurrentTransform),
 /* harmony export */   getCurrentTransformInverse: () => (/* binding */ getCurrentTransformInverse),
@@ -12178,13 +12192,16 @@ for (const op in util.OPS) {
 
 
 
+function _defineProperty(obj, key, value) { key = _toPropertyKey(key); if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+function _toPropertyKey(arg) { var key = _toPrimitive(arg, "string"); return typeof key === "symbol" ? key : String(key); }
+function _toPrimitive(input, hint) { if (typeof input !== "object" || input === null) return input; var prim = input[Symbol.toPrimitive]; if (prim !== undefined) { var res = prim.call(input, hint || "default"); if (typeof res !== "object") return res; throw new TypeError("@@toPrimitive must return a primitive value."); } return (hint === "string" ? String : Number)(input); }
 
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 class PixelsPerInch {
   static CSS = 96.0;
   static PDF = 72.0;
-  static PDF_TO_CSS_UNITS = this.CSS / this.PDF;
+  static #_ = _defineProperty(this, "PDF_TO_CSS_UNITS", this.CSS / this.PDF);
 }
 class DOMFilterFactory extends _base_factory_js__WEBPACK_IMPORTED_MODULE_15__.BaseFilterFactory {
   #_cache;
@@ -12425,30 +12442,41 @@ class DOMCanvasFactory extends _base_factory_js__WEBPACK_IMPORTED_MODULE_15__.Ba
   }
 }
 async function fetchData(url) {
-  let asTypedArray = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+  let type = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "text";
   if (isValidFetchUrl(url, document.baseURI)) {
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(response.statusText);
     }
-    return asTypedArray ? new Uint8Array(await response.arrayBuffer()) : (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_16__.stringToBytes)(await response.text());
+    switch (type) {
+      case "arraybuffer":
+        return response.arrayBuffer();
+      case "blob":
+        return response.blob();
+      case "json":
+        return response.json();
+    }
+    return response.text();
   }
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest();
     request.open("GET", url, true);
-    if (asTypedArray) {
-      request.responseType = "arraybuffer";
-    }
+    request.responseType = type;
     request.onreadystatechange = () => {
       if (request.readyState !== XMLHttpRequest.DONE) {
         return;
       }
       if (request.status === 200 || request.status === 0) {
         let data;
-        if (asTypedArray && request.response) {
-          data = new Uint8Array(request.response);
-        } else if (!asTypedArray && request.responseText) {
-          data = (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_16__.stringToBytes)(request.responseText);
+        switch (type) {
+          case "arraybuffer":
+          case "blob":
+          case "json":
+            data = request.response;
+            break;
+          default:
+            data = request.responseText;
+            break;
         }
         if (data) {
           resolve(data);
@@ -12462,9 +12490,9 @@ async function fetchData(url) {
 }
 class DOMCMapReaderFactory extends _base_factory_js__WEBPACK_IMPORTED_MODULE_15__.BaseCMapReaderFactory {
   _fetchData(url, compressionType) {
-    return fetchData(url, this.isCompressed).then(data => {
+    return fetchData(url, this.isCompressed ? "arraybuffer" : "text").then(data => {
       return {
-        cMapData: data,
+        cMapData: data instanceof ArrayBuffer ? new Uint8Array(data) : (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_16__.stringToBytes)(data),
         compressionType
       };
     });
@@ -12472,7 +12500,9 @@ class DOMCMapReaderFactory extends _base_factory_js__WEBPACK_IMPORTED_MODULE_15_
 }
 class DOMStandardFontDataFactory extends _base_factory_js__WEBPACK_IMPORTED_MODULE_15__.BaseStandardFontDataFactory {
   _fetchData(url) {
-    return fetchData(url, true);
+    return fetchData(url, "arraybuffer").then(data => {
+      return new Uint8Array(data);
+    });
   }
 }
 class DOMSVGFactory extends _base_factory_js__WEBPACK_IMPORTED_MODULE_15__.BaseSVGFactory {
@@ -12825,6 +12855,182 @@ function setLayerDimensions(div, viewport) {
 
 /***/ }),
 
+/***/ 9423:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   DrawLayer: () => (/* binding */ DrawLayer)
+/* harmony export */ });
+/* harmony import */ var core_js_modules_es_array_push_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4226);
+/* harmony import */ var _display_utils_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(473);
+/* harmony import */ var _shared_util_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3266);
+
+
+
+class DrawLayer {
+  #parent = null;
+  #id = 0;
+  #mapping = new Map();
+  constructor(_ref) {
+    let {
+      pageIndex
+    } = _ref;
+    this.pageIndex = pageIndex;
+  }
+  setParent(parent) {
+    if (!this.#parent) {
+      this.#parent = parent;
+      return;
+    }
+    if (this.#parent !== parent) {
+      if (this.#mapping.size > 0) {
+        for (const root of this.#mapping.values()) {
+          root.remove();
+          parent.append(root);
+        }
+      }
+      this.#parent = parent;
+    }
+  }
+  static get _svgFactory() {
+    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_2__.shadow)(this, "_svgFactory", new _display_utils_js__WEBPACK_IMPORTED_MODULE_1__.DOMSVGFactory());
+  }
+  static #setBox(element, _ref2) {
+    let {
+      x,
+      y,
+      width,
+      height
+    } = _ref2;
+    const {
+      style
+    } = element;
+    style.top = `${100 * y}%`;
+    style.left = `${100 * x}%`;
+    style.width = `${100 * width}%`;
+    style.height = `${100 * height}%`;
+  }
+  #createSVG(box) {
+    const svg = DrawLayer._svgFactory.create(1, 1, true);
+    this.#parent.append(svg);
+    DrawLayer.#setBox(svg, box);
+    return svg;
+  }
+  highlight(_ref3, color, opacity) {
+    let {
+      outlines,
+      box
+    } = _ref3;
+    const id = this.#id++;
+    const root = this.#createSVG(box);
+    root.classList.add("highlight");
+    const defs = DrawLayer._svgFactory.createElement("defs");
+    root.append(defs);
+    const path = DrawLayer._svgFactory.createElement("path");
+    defs.append(path);
+    const pathId = `path_p${this.pageIndex}_${id}`;
+    path.setAttribute("id", pathId);
+    path.setAttribute("d", DrawLayer.#extractPathFromHighlightOutlines(outlines));
+    const clipPath = DrawLayer._svgFactory.createElement("clipPath");
+    defs.append(clipPath);
+    const clipPathId = `clip_${pathId}`;
+    clipPath.setAttribute("id", clipPathId);
+    clipPath.setAttribute("clipPathUnits", "objectBoundingBox");
+    const clipPathUse = DrawLayer._svgFactory.createElement("use");
+    clipPath.append(clipPathUse);
+    clipPathUse.setAttribute("href", `#${pathId}`);
+    clipPathUse.classList.add("clip");
+    const use = DrawLayer._svgFactory.createElement("use");
+    root.append(use);
+    root.setAttribute("fill", color);
+    root.setAttribute("fill-opacity", opacity);
+    use.setAttribute("href", `#${pathId}`);
+    this.#mapping.set(id, root);
+    return {
+      id,
+      clipPathId: `url(#${clipPathId})`
+    };
+  }
+  highlightOutline(_ref4) {
+    let {
+      outlines,
+      box
+    } = _ref4;
+    const id = this.#id++;
+    const root = this.#createSVG(box);
+    root.classList.add("highlightOutline");
+    const defs = DrawLayer._svgFactory.createElement("defs");
+    root.append(defs);
+    const path = DrawLayer._svgFactory.createElement("path");
+    defs.append(path);
+    const pathId = `path_p${this.pageIndex}_${id}`;
+    path.setAttribute("id", pathId);
+    path.setAttribute("d", DrawLayer.#extractPathFromHighlightOutlines(outlines));
+    path.setAttribute("vector-effect", "non-scaling-stroke");
+    const use1 = DrawLayer._svgFactory.createElement("use");
+    root.append(use1);
+    use1.setAttribute("href", `#${pathId}`);
+    const use2 = use1.cloneNode();
+    root.append(use2);
+    use1.classList.add("mainOutline");
+    use2.classList.add("secondaryOutline");
+    this.#mapping.set(id, root);
+    return id;
+  }
+  static #extractPathFromHighlightOutlines(polygons) {
+    const buffer = [];
+    for (const polygon of polygons) {
+      let [prevX, prevY] = polygon;
+      buffer.push(`M${prevX} ${prevY}`);
+      for (let i = 2; i < polygon.length; i += 2) {
+        const x = polygon[i];
+        const y = polygon[i + 1];
+        if (x === prevX) {
+          buffer.push(`V${y}`);
+          prevY = y;
+        } else if (y === prevY) {
+          buffer.push(`H${x}`);
+          prevX = x;
+        }
+      }
+      buffer.push("Z");
+    }
+    return buffer.join(" ");
+  }
+  updateBox(id, box) {
+    DrawLayer.#setBox(this.#mapping.get(id), box);
+  }
+  rotate(id, angle) {
+    this.#mapping.get(id).setAttribute("data-main-rotation", angle);
+  }
+  changeColor(id, color) {
+    this.#mapping.get(id).setAttribute("fill", color);
+  }
+  changeOpacity(id, opacity) {
+    this.#mapping.get(id).setAttribute("fill-opacity", opacity);
+  }
+  addClass(id, className) {
+    this.#mapping.get(id).classList.add(className);
+  }
+  removeClass(id, className) {
+    this.#mapping.get(id).classList.remove(className);
+  }
+  remove(id) {
+    this.#mapping.get(id).remove();
+    this.#mapping.delete(id);
+  }
+  destroy() {
+    this.#parent = null;
+    for (const root of this.#mapping.values()) {
+      root.remove();
+    }
+    this.#mapping.clear();
+  }
+}
+
+
+/***/ }),
+
 /***/ 331:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
@@ -12852,8 +13058,8 @@ var esnext_set_symmetric_difference_v2 = __webpack_require__(5438);
 var esnext_set_union_v2 = __webpack_require__(7914);
 // EXTERNAL MODULE: ./src/shared/util.js
 var util = __webpack_require__(3266);
-// EXTERNAL MODULE: ./src/display/editor/editor.js
-var editor_editor = __webpack_require__(7682);
+// EXTERNAL MODULE: ./src/display/editor/editor.js + 1 modules
+var editor_editor = __webpack_require__(5796);
 // EXTERNAL MODULE: ./node_modules/core-js/modules/es.array.push.js
 var es_array_push = __webpack_require__(4226);
 // EXTERNAL MODULE: ./node_modules/core-js/modules/esnext.iterator.constructor.js
@@ -13802,7 +14008,7 @@ class InkEditor extends editor_editor.AnnotationEditor {
     this.#disableEditing = true;
     this.div.classList.add("disabled");
     this.#fitToContent(true);
-    this.makeResizable();
+    this.select();
     this.parent.addInkEditorIfNeeded(true);
     this.moveInDOM();
     this.div.focus({
@@ -13822,8 +14028,10 @@ class InkEditor extends editor_editor.AnnotationEditor {
     }
     this.setInForeground();
     event.preventDefault();
-    if (event.type !== "mouse") {
-      this.div.focus();
+    if (event.pointerType !== "mouse" && !this.div.contains(document.activeElement)) {
+      this.div.focus({
+        preventScroll: true
+      });
     }
     this.#startDrawing(event.offsetX, event.offsetY);
   }
@@ -15064,16 +15272,89 @@ class AnnotationEditorLayer {
 
 /***/ }),
 
-/***/ 7682:
+/***/ 5796:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   AnnotationEditor: () => (/* binding */ AnnotationEditor)
-/* harmony export */ });
-/* harmony import */ var core_js_modules_es_error_cause_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3352);
-/* harmony import */ var _tools_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(4812);
-/* harmony import */ var _shared_util_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3266);
-/* harmony import */ var _display_utils_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(473);
+
+// EXPORTS
+__webpack_require__.d(__webpack_exports__, {
+  AnnotationEditor: () => (/* binding */ AnnotationEditor)
+});
+
+// EXTERNAL MODULE: ./node_modules/core-js/modules/es.error.cause.js
+var es_error_cause = __webpack_require__(3352);
+// EXTERNAL MODULE: ./src/display/editor/tools.js
+var tools = __webpack_require__(4812);
+// EXTERNAL MODULE: ./src/shared/util.js
+var util = __webpack_require__(3266);
+// EXTERNAL MODULE: ./src/display/display_utils.js
+var display_utils = __webpack_require__(473);
+;// CONCATENATED MODULE: ./src/display/editor/toolbar.js
+
+class EditorToolbar {
+  #toolbar = null;
+  #editor;
+  #buttons = null;
+  constructor(editor) {
+    this.#editor = editor;
+  }
+  render() {
+    const editToolbar = this.#toolbar = document.createElement("div");
+    editToolbar.className = "editToolbar";
+    editToolbar.addEventListener("contextmenu", display_utils.noContextMenu);
+    editToolbar.addEventListener("pointerdown", EditorToolbar.#pointerDown);
+    const buttons = this.#buttons = document.createElement("div");
+    buttons.className = "buttons";
+    editToolbar.append(buttons);
+    this.#addDeleteButton();
+    return editToolbar;
+  }
+  static #pointerDown(e) {
+    e.stopPropagation();
+  }
+  #focusIn(e) {
+    this.#editor._focusEventsAllowed = false;
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  #focusOut(e) {
+    this.#editor._focusEventsAllowed = true;
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  #addListenersToElement(element) {
+    element.addEventListener("focusin", this.#focusIn.bind(this), {
+      capture: true
+    });
+    element.addEventListener("focusout", this.#focusOut.bind(this), {
+      capture: true
+    });
+    element.addEventListener("contextmenu", display_utils.noContextMenu);
+  }
+  hide() {
+    this.#toolbar.classList.add("hidden");
+  }
+  show() {
+    this.#toolbar.classList.remove("hidden");
+  }
+  #addDeleteButton() {
+    const button = document.createElement("button");
+    button.className = "delete";
+    button.tabIndex = 0;
+    button.setAttribute("data-l10n-id", "pdfjs-editor-remove-button");
+    this.#addListenersToElement(button);
+    button.addEventListener("click", e => {
+      this.#editor._uiManager.delete();
+    });
+    this.#buttons.append(button);
+  }
+  remove() {
+    this.#toolbar.remove();
+  }
+}
+
+;// CONCATENATED MODULE: ./src/display/editor/editor.js
+
 
 
 
@@ -15091,6 +15372,7 @@ class AnnotationEditor {
   #savedDimensions = null;
   #boundFocusin = this.focusin.bind(this);
   #boundFocusout = this.focusout.bind(this);
+  #editToolbar = null;
   #focusedResizerName = "";
   #hasBeenClicked = false;
   #isEditing = false;
@@ -15104,14 +15386,14 @@ class AnnotationEditor {
   #isDraggable = false;
   #zIndex = AnnotationEditor._zIndex++;
   static _borderLineWidth = -1;
-  static _colorManager = new _tools_js__WEBPACK_IMPORTED_MODULE_1__.ColorManager();
+  static _colorManager = new tools.ColorManager();
   static _zIndex = 1;
   static SMALL_EDITOR_SIZE = 0;
   static get _resizerKeyboardManager() {
     const resize = AnnotationEditor.prototype._resizeWithKeyboard;
-    const small = _tools_js__WEBPACK_IMPORTED_MODULE_1__.AnnotationEditorUIManager.TRANSLATE_SMALL;
-    const big = _tools_js__WEBPACK_IMPORTED_MODULE_1__.AnnotationEditorUIManager.TRANSLATE_BIG;
-    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_2__.shadow)(this, "_resizerKeyboardManager", new _tools_js__WEBPACK_IMPORTED_MODULE_1__.KeyboardManager([[["ArrowLeft", "mac+ArrowLeft"], resize, {
+    const small = tools.AnnotationEditorUIManager.TRANSLATE_SMALL;
+    const big = tools.AnnotationEditorUIManager.TRANSLATE_BIG;
+    return (0,util.shadow)(this, "_resizerKeyboardManager", new tools.KeyboardManager([[["ArrowLeft", "mac+ArrowLeft"], resize, {
       args: [-small, 0]
     }], [["ctrl+ArrowLeft", "mac+shift+ArrowLeft"], resize, {
       args: [-big, 0]
@@ -15131,7 +15413,7 @@ class AnnotationEditor {
   }
   constructor(parameters) {
     if (this.constructor === AnnotationEditor) {
-      (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_2__.unreachable)("Cannot initialize AnnotationEditor.");
+      (0,util.unreachable)("Cannot initialize AnnotationEditor.");
     }
     this.parent = parameters.parent;
     this.id = parameters.id;
@@ -15167,7 +15449,7 @@ class AnnotationEditor {
     return Object.getPrototypeOf(this).constructor._type;
   }
   static get _defaultLineColor() {
-    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_2__.shadow)(this, "_defaultLineColor", this._colorManager.getHexCode("CanvasText"));
+    return (0,util.shadow)(this, "_defaultLineColor", this._colorManager.getHexCode("CanvasText"));
   }
   static deleteAnnotationElement(editor) {
     const fakeEditor = new FakeEditor({
@@ -15201,7 +15483,7 @@ class AnnotationEditor {
     return false;
   }
   static paste(item, parent) {
-    (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_2__.unreachable)("Not implemented");
+    (0,util.unreachable)("Not implemented");
   }
   get propertiesToUpdate() {
     return [];
@@ -15457,7 +15739,7 @@ class AnnotationEditor {
     } = this;
     const scaledWidth = pageWidth * parentScale;
     const scaledHeight = pageHeight * parentScale;
-    return _shared_util_js__WEBPACK_IMPORTED_MODULE_2__.FeatureTest.isCSSRoundSupported ? [Math.round(scaledWidth), Math.round(scaledHeight)] : [scaledWidth, scaledHeight];
+    return util.FeatureTest.isCSSRoundSupported ? [Math.round(scaledWidth), Math.round(scaledHeight)] : [scaledWidth, scaledHeight];
   }
   setDims(width, height) {
     const [parentWidth, parentHeight] = this.parentDimensions;
@@ -15504,7 +15786,7 @@ class AnnotationEditor {
       div.classList.add("resizer", name);
       div.setAttribute("data-resizer-name", name);
       div.addEventListener("pointerdown", this.#resizerPointerdown.bind(this, name));
-      div.addEventListener("contextmenu", _display_utils_js__WEBPACK_IMPORTED_MODULE_3__.noContextMenu);
+      div.addEventListener("contextmenu", display_utils.noContextMenu);
       div.tabIndex = -1;
     }
     this.div.prepend(this.#resizersDiv);
@@ -15513,7 +15795,7 @@ class AnnotationEditor {
     event.preventDefault();
     const {
       isMac
-    } = _shared_util_js__WEBPACK_IMPORTED_MODULE_2__.FeatureTest.platform;
+    } = util.FeatureTest.platform;
     if (event.button !== 0 || event.ctrlKey && isMac) {
       return;
     }
@@ -15674,7 +15956,7 @@ class AnnotationEditor {
     altText.textContent = msg;
     altText.setAttribute("aria-label", msg);
     altText.tabIndex = "0";
-    altText.addEventListener("contextmenu", _display_utils_js__WEBPACK_IMPORTED_MODULE_3__.noContextMenu);
+    altText.addEventListener("contextmenu", display_utils.noContextMenu);
     altText.addEventListener("pointerdown", event => event.stopPropagation());
     const onClick = event => {
       this.#altTextButton.hidden = true;
@@ -15771,6 +16053,20 @@ class AnnotationEditor {
     });
     this.#altTextWasFromKeyBoard = false;
   }
+  addEditToolbar() {
+    if (this.#editToolbar || this.#isInEditMode) {
+      return;
+    }
+    this.#editToolbar = new EditorToolbar(this);
+    this.div.append(this.#editToolbar.render());
+  }
+  removeEditToolbar() {
+    if (!this.#editToolbar) {
+      return;
+    }
+    this.#editToolbar.remove();
+    this.#editToolbar = null;
+  }
   getClientDimensions() {
     return this.div.getBoundingClientRect();
   }
@@ -15808,13 +16104,13 @@ class AnnotationEditor {
     }
     const [tx, ty] = this.getInitialTranslation();
     this.translate(tx, ty);
-    (0,_tools_js__WEBPACK_IMPORTED_MODULE_1__.bindEvents)(this, this.div, ["pointerdown"]);
+    (0,tools.bindEvents)(this, this.div, ["pointerdown"]);
     return this.div;
   }
   pointerdown(event) {
     const {
       isMac
-    } = _shared_util_js__WEBPACK_IMPORTED_MODULE_2__.FeatureTest.platform;
+    } = util.FeatureTest.platform;
     if (event.button !== 0 || event.ctrlKey && isMac) {
       event.preventDefault();
       return;
@@ -15850,7 +16146,7 @@ class AnnotationEditor {
       if (!this._uiManager.endDragSession()) {
         const {
           isMac
-        } = _shared_util_js__WEBPACK_IMPORTED_MODULE_2__.FeatureTest.platform;
+        } = util.FeatureTest.platform;
         if (event.ctrlKey && !isMac || event.shiftKey || event.metaKey && isMac) {
           this.parent.toggleSelected(this);
         } else {
@@ -15942,7 +16238,7 @@ class AnnotationEditor {
   serialize() {
     let isForCopying = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
     let context = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
-    (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_2__.unreachable)("An editor must be serializable");
+    (0,util.unreachable)("An editor must be serializable");
   }
   static deserialize(data, parent, uiManager) {
     const editor = new this.prototype.constructor({
@@ -15978,6 +16274,7 @@ class AnnotationEditor {
       this.#moveInDOMTimeout = null;
     }
     this.#stopResizing();
+    this.removeEditToolbar();
   }
   get isResizable() {
     return false;
@@ -15986,7 +16283,7 @@ class AnnotationEditor {
     if (this.isResizable) {
       this.#createResizers();
       this.#resizersDiv.classList.remove("hidden");
-      (0,_tools_js__WEBPACK_IMPORTED_MODULE_1__.bindEvents)(this, this.div, ["keydown"]);
+      (0,tools.bindEvents)(this, this.div, ["keydown"]);
     }
   }
   keydown(event) {
@@ -16097,6 +16394,8 @@ class AnnotationEditor {
   select() {
     this.makeResizable();
     this.div?.classList.add("selectedEditor");
+    this.addEditToolbar();
+    this.#editToolbar?.show();
   }
   unselect() {
     this.#resizersDiv?.classList.add("hidden");
@@ -16104,6 +16403,7 @@ class AnnotationEditor {
     if (this.div?.contains(document.activeElement)) {
       this._uiManager.currentLayer.div.focus();
     }
+    this.#editToolbar?.hide();
   }
   updateParams(type, value) {}
   disableEditing() {
@@ -16169,6 +16469,228 @@ class FakeEditor extends AnnotationEditor {
 
 /***/ }),
 
+/***/ 7405:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   Outliner: () => (/* binding */ Outliner)
+/* harmony export */ });
+/* harmony import */ var core_js_modules_es_array_push_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4226);
+/* harmony import */ var core_js_modules_esnext_set_difference_v2_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(5561);
+/* harmony import */ var core_js_modules_esnext_set_intersection_v2_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(8587);
+/* harmony import */ var core_js_modules_esnext_set_is_disjoint_from_v2_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(3247);
+/* harmony import */ var core_js_modules_esnext_set_is_subset_of_v2_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(3302);
+/* harmony import */ var core_js_modules_esnext_set_is_superset_of_v2_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(9490);
+/* harmony import */ var core_js_modules_esnext_set_symmetric_difference_v2_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(5438);
+/* harmony import */ var core_js_modules_esnext_set_union_v2_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(7914);
+
+
+
+
+
+
+
+
+class Outliner {
+  #box;
+  #verticalEdges = [];
+  #intervals = [];
+  constructor(boxes) {
+    let borderWidth = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+    let innerMargin = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+    let isLTR = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : true;
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    const NUMBER_OF_DIGITS = 4;
+    const EPSILON = 10 ** -NUMBER_OF_DIGITS;
+    for (const {
+      x,
+      y,
+      width,
+      height
+    } of boxes) {
+      const x1 = Math.floor((x - borderWidth) / EPSILON) * EPSILON;
+      const x2 = Math.ceil((x + width + borderWidth) / EPSILON) * EPSILON;
+      const y1 = Math.floor((y - borderWidth) / EPSILON) * EPSILON;
+      const y2 = Math.ceil((y + height + borderWidth) / EPSILON) * EPSILON;
+      const left = [x1, y1, y2, true];
+      const right = [x2, y1, y2, false];
+      this.#verticalEdges.push(left, right);
+      minX = Math.min(minX, x1);
+      maxX = Math.max(maxX, x2);
+      minY = Math.min(minY, y1);
+      maxY = Math.max(maxY, y2);
+    }
+    const bboxWidth = maxX - minX + 2 * innerMargin;
+    const bboxHeight = maxY - minY + 2 * innerMargin;
+    const shiftedMinX = minX - innerMargin;
+    const shiftedMinY = minY - innerMargin;
+    const lastEdge = this.#verticalEdges.at(isLTR ? -1 : -2);
+    const lastPoint = [lastEdge[0], lastEdge[2]];
+    for (const edge of this.#verticalEdges) {
+      const [x, y1, y2] = edge;
+      edge[0] = (x - shiftedMinX) / bboxWidth;
+      edge[1] = (y1 - shiftedMinY) / bboxHeight;
+      edge[2] = (y2 - shiftedMinY) / bboxHeight;
+    }
+    this.#box = {
+      x: shiftedMinX,
+      y: shiftedMinY,
+      width: bboxWidth,
+      height: bboxHeight,
+      lastPoint
+    };
+  }
+  getOutlines() {
+    this.#verticalEdges.sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]);
+    const outlineVerticalEdges = [];
+    for (const edge of this.#verticalEdges) {
+      if (edge[3]) {
+        outlineVerticalEdges.push(...this.#breakEdge(edge));
+        this.#insert(edge);
+      } else {
+        this.#remove(edge);
+        outlineVerticalEdges.push(...this.#breakEdge(edge));
+      }
+    }
+    return this.#getOutlines(outlineVerticalEdges);
+  }
+  #getOutlines(outlineVerticalEdges) {
+    const edges = [];
+    const allEdges = new Set();
+    for (const edge of outlineVerticalEdges) {
+      const [x, y1, y2] = edge;
+      edges.push([x, y1, edge], [x, y2, edge]);
+    }
+    edges.sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+    for (let i = 0, ii = edges.length; i < ii; i += 2) {
+      const edge1 = edges[i][2];
+      const edge2 = edges[i + 1][2];
+      edge1.push(edge2);
+      edge2.push(edge1);
+      allEdges.add(edge1);
+      allEdges.add(edge2);
+    }
+    const outlines = [];
+    let outline;
+    while (allEdges.size > 0) {
+      const edge = allEdges.values().next().value;
+      let [x, y1, y2, edge1, edge2] = edge;
+      allEdges.delete(edge);
+      let lastPointX = x;
+      let lastPointY = y1;
+      outline = [x, y2];
+      outlines.push(outline);
+      while (true) {
+        let e;
+        if (allEdges.has(edge1)) {
+          e = edge1;
+        } else if (allEdges.has(edge2)) {
+          e = edge2;
+        } else {
+          break;
+        }
+        allEdges.delete(e);
+        [x, y1, y2, edge1, edge2] = e;
+        if (lastPointX !== x) {
+          outline.push(lastPointX, lastPointY, x, lastPointY === y1 ? y1 : y2);
+          lastPointX = x;
+        }
+        lastPointY = lastPointY === y1 ? y2 : y1;
+      }
+      outline.push(lastPointX, lastPointY);
+    }
+    return {
+      outlines,
+      box: this.#box
+    };
+  }
+  #binarySearch(y) {
+    const array = this.#intervals;
+    let start = 0;
+    let end = array.length - 1;
+    while (start <= end) {
+      const middle = start + end >> 1;
+      const y1 = array[middle][0];
+      if (y1 === y) {
+        return middle;
+      }
+      if (y1 < y) {
+        start = middle + 1;
+      } else {
+        end = middle - 1;
+      }
+    }
+    return end + 1;
+  }
+  #insert(_ref) {
+    let [, y1, y2] = _ref;
+    const index = this.#binarySearch(y1);
+    this.#intervals.splice(index, 0, [y1, y2]);
+  }
+  #remove(_ref2) {
+    let [, y1, y2] = _ref2;
+    const index = this.#binarySearch(y1);
+    for (let i = index; i < this.#intervals.length; i++) {
+      const [start, end] = this.#intervals[i];
+      if (start !== y1) {
+        break;
+      }
+      if (start === y1 && end === y2) {
+        this.#intervals.splice(i, 1);
+        return;
+      }
+    }
+    for (let i = index - 1; i >= 0; i--) {
+      const [start, end] = this.#intervals[i];
+      if (start !== y1) {
+        break;
+      }
+      if (start === y1 && end === y2) {
+        this.#intervals.splice(i, 1);
+        return;
+      }
+    }
+  }
+  #breakEdge(edge) {
+    const [x, y1, y2] = edge;
+    const results = [[x, y1, y2]];
+    const index = this.#binarySearch(y2);
+    for (let i = 0; i < index; i++) {
+      const [start, end] = this.#intervals[i];
+      for (let j = 0, jj = results.length; j < jj; j++) {
+        const [, y3, y4] = results[j];
+        if (end <= y3 || y4 <= start) {
+          continue;
+        }
+        if (y3 >= start) {
+          if (y4 > end) {
+            results[j][1] = end;
+          } else {
+            if (jj === 1) {
+              return [];
+            }
+            results.splice(j, 1);
+            j--;
+            jj--;
+          }
+          continue;
+        }
+        results[j][2] = start;
+        if (y4 > end) {
+          results.push([x, end, y4]);
+        }
+      }
+    }
+    return results;
+  }
+}
+
+
+/***/ }),
+
 /***/ 4812:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
@@ -16189,22 +16711,20 @@ class FakeEditor extends AnnotationEditor {
 /* harmony import */ var core_js_modules_esnext_array_buffer_detached_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(344);
 /* harmony import */ var core_js_modules_esnext_array_buffer_transfer_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(4305);
 /* harmony import */ var core_js_modules_esnext_array_buffer_transfer_to_fixed_length_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(7583);
-/* harmony import */ var core_js_modules_es_error_cause_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(3352);
-/* harmony import */ var core_js_modules_es_array_push_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(4226);
-/* harmony import */ var core_js_modules_esnext_set_difference_v2_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(5561);
-/* harmony import */ var core_js_modules_esnext_set_intersection_v2_js__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(8587);
-/* harmony import */ var core_js_modules_esnext_set_is_disjoint_from_v2_js__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(3247);
-/* harmony import */ var core_js_modules_esnext_set_is_subset_of_v2_js__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(3302);
-/* harmony import */ var core_js_modules_esnext_set_is_superset_of_v2_js__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(9490);
-/* harmony import */ var core_js_modules_esnext_set_symmetric_difference_v2_js__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(5438);
-/* harmony import */ var core_js_modules_esnext_set_union_v2_js__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(7914);
-/* harmony import */ var core_js_modules_esnext_iterator_constructor_js__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(7121);
-/* harmony import */ var core_js_modules_esnext_iterator_every_js__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(385);
-/* harmony import */ var core_js_modules_esnext_json_parse_js__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(2808);
-/* harmony import */ var core_js_modules_esnext_iterator_some_js__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(8518);
-/* harmony import */ var _shared_util_js__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(3266);
-/* harmony import */ var _display_utils_js__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(473);
-
+/* harmony import */ var core_js_modules_es_array_push_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(4226);
+/* harmony import */ var core_js_modules_esnext_set_difference_v2_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(5561);
+/* harmony import */ var core_js_modules_esnext_set_intersection_v2_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(8587);
+/* harmony import */ var core_js_modules_esnext_set_is_disjoint_from_v2_js__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(3247);
+/* harmony import */ var core_js_modules_esnext_set_is_subset_of_v2_js__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(3302);
+/* harmony import */ var core_js_modules_esnext_set_is_superset_of_v2_js__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(9490);
+/* harmony import */ var core_js_modules_esnext_set_symmetric_difference_v2_js__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(5438);
+/* harmony import */ var core_js_modules_esnext_set_union_v2_js__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(7914);
+/* harmony import */ var core_js_modules_esnext_iterator_constructor_js__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(7121);
+/* harmony import */ var core_js_modules_esnext_iterator_every_js__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(385);
+/* harmony import */ var core_js_modules_esnext_json_parse_js__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(2808);
+/* harmony import */ var core_js_modules_esnext_iterator_some_js__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(8518);
+/* harmony import */ var _shared_util_js__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(3266);
+/* harmony import */ var _display_utils_js__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(473);
 
 
 
@@ -16239,11 +16759,11 @@ function opacityToHex(opacity) {
 class IdManager {
   #id = 0;
   getId() {
-    return `${_shared_util_js__WEBPACK_IMPORTED_MODULE_22__.AnnotationEditorPrefix}${this.#id++}`;
+    return `${_shared_util_js__WEBPACK_IMPORTED_MODULE_21__.AnnotationEditorPrefix}${this.#id++}`;
   }
 }
 class ImageManager {
-  #baseId = (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_22__.getUuid)();
+  #baseId = (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_21__.getUuid)();
   #id = 0;
   #cache = null;
   static get _isSVGFittingCanvas() {
@@ -16256,7 +16776,7 @@ class ImageManager {
       ctx.drawImage(image, 0, 0, 1, 1, 0, 0, 1, 3);
       return new Uint32Array(ctx.getImageData(0, 0, 1, 1).data.buffer)[0] === 0;
     });
-    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_22__.shadow)(this, "_isSVGFittingCanvas", promise);
+    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_21__.shadow)(this, "_isSVGFittingCanvas", promise);
   }
   async #get(key, rawData) {
     this.#cache ||= new Map();
@@ -16278,11 +16798,7 @@ class ImageManager {
       let image;
       if (typeof rawData === "string") {
         data.url = rawData;
-        const response = await fetch(rawData);
-        if (!response.ok) {
-          throw new Error(response.statusText);
-        }
-        image = await response.blob();
+        image = await (0,_display_utils_js__WEBPACK_IMPORTED_MODULE_22__.fetchData)(rawData, "blob");
       } else {
         image = data.file = rawData;
       }
@@ -16457,7 +16973,7 @@ class KeyboardManager {
     this.allKeys = new Set();
     const {
       isMac
-    } = _shared_util_js__WEBPACK_IMPORTED_MODULE_22__.FeatureTest.platform;
+    } = _shared_util_js__WEBPACK_IMPORTED_MODULE_21__.FeatureTest.platform;
     for (const [keys, callback, options = {}] of callbacks) {
       for (const key of keys) {
         const isMacKey = key.startsWith("mac+");
@@ -16525,11 +17041,11 @@ class ColorManager {
   static _colorsMapping = new Map([["CanvasText", [0, 0, 0]], ["Canvas", [255, 255, 255]]]);
   get _colors() {
     const colors = new Map([["CanvasText", null], ["Canvas", null]]);
-    (0,_display_utils_js__WEBPACK_IMPORTED_MODULE_23__.getColorValues)(colors);
-    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_22__.shadow)(this, "_colors", colors);
+    (0,_display_utils_js__WEBPACK_IMPORTED_MODULE_22__.getColorValues)(colors);
+    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_21__.shadow)(this, "_colors", colors);
   }
   convert(color) {
-    const rgb = (0,_display_utils_js__WEBPACK_IMPORTED_MODULE_23__.getRGB)(color);
+    const rgb = (0,_display_utils_js__WEBPACK_IMPORTED_MODULE_22__.getRGB)(color);
     if (!window.matchMedia("(forced-colors: active)").matches) {
       return rgb;
     }
@@ -16545,7 +17061,7 @@ class ColorManager {
     if (!rgb) {
       return name;
     }
-    return _shared_util_js__WEBPACK_IMPORTED_MODULE_22__.Util.makeHexColor(...rgb);
+    return _shared_util_js__WEBPACK_IMPORTED_MODULE_21__.Util.makeHexColor(...rgb);
   }
 }
 class AnnotationEditorUIManager {
@@ -16566,7 +17082,7 @@ class AnnotationEditorUIManager {
   #isEnabled = false;
   #isWaiting = false;
   #lastActiveElement = null;
-  #mode = _shared_util_js__WEBPACK_IMPORTED_MODULE_22__.AnnotationEditorType.NONE;
+  #mode = _shared_util_js__WEBPACK_IMPORTED_MODULE_21__.AnnotationEditorType.NONE;
   #selectedEditors = new Set();
   #pageColors = null;
   #boundBlur = this.blur.bind(this);
@@ -16611,7 +17127,7 @@ class AnnotationEditorUIManager {
     };
     const small = this.TRANSLATE_SMALL;
     const big = this.TRANSLATE_BIG;
-    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_22__.shadow)(this, "_keyboardManager", new KeyboardManager([[["ctrl+a", "mac+meta+a"], proto.selectAll, {
+    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_21__.shadow)(this, "_keyboardManager", new KeyboardManager([[["ctrl+a", "mac+meta+a"], proto.selectAll, {
       checker: textInputChecker
     }], [["ctrl+z", "mac+meta+z"], proto.undo, {
       checker: textInputChecker
@@ -16620,7 +17136,12 @@ class AnnotationEditorUIManager {
     }], [["Backspace", "alt+Backspace", "ctrl+Backspace", "shift+Backspace", "mac+Backspace", "mac+alt+Backspace", "mac+ctrl+Backspace", "Delete", "ctrl+Delete", "shift+Delete", "mac+Delete"], proto.delete, {
       checker: textInputChecker
     }], [["Enter", "mac+Enter"], proto.addNewEditorFromKeyboard, {
-      checker: self => self.#container.contains(document.activeElement) && !self.isEnterHandled
+      checker: (self, _ref3) => {
+        let {
+          target: el
+        } = _ref3;
+        return !(el instanceof HTMLButtonElement) && self.#container.contains(el) && !self.isEnterHandled;
+      }
     }], [[" ", "mac+ "], proto.addNewEditorFromKeyboard, {
       checker: self => self.#container.contains(document.activeElement)
     }], [["Escape", "mac+Escape"], proto.unselectAll], [["ArrowLeft", "mac+ArrowLeft"], proto.translateSelectedEditors, {
@@ -16662,7 +17183,7 @@ class AnnotationEditorUIManager {
     this.#filterFactory = pdfDocument.filterFactory;
     this.#pageColors = pageColors;
     this.viewParameters = {
-      realScale: _display_utils_js__WEBPACK_IMPORTED_MODULE_23__.PixelsPerInch.PDF_TO_CSS_UNITS,
+      realScale: _display_utils_js__WEBPACK_IMPORTED_MODULE_22__.PixelsPerInch.PDF_TO_CSS_UNITS,
       rotation: 0
     };
   }
@@ -16693,18 +17214,18 @@ class AnnotationEditorUIManager {
     }
   }
   get hcmFilter() {
-    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_22__.shadow)(this, "hcmFilter", this.#pageColors ? this.#filterFactory.addHCMFilter(this.#pageColors.foreground, this.#pageColors.background) : "none");
+    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_21__.shadow)(this, "hcmFilter", this.#pageColors ? this.#filterFactory.addHCMFilter(this.#pageColors.foreground, this.#pageColors.background) : "none");
   }
   get direction() {
-    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_22__.shadow)(this, "direction", getComputedStyle(this.#container).direction);
+    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_21__.shadow)(this, "direction", getComputedStyle(this.#container).direction);
   }
   editAltText(editor) {
     this.#altTextManager?.editAltText(this, editor);
   }
-  onPageChanging(_ref3) {
+  onPageChanging(_ref4) {
     let {
       pageNumber
-    } = _ref3;
+    } = _ref4;
     this.#currentPageIndex = pageNumber - 1;
   }
   focusMainContainer() {
@@ -16734,20 +17255,20 @@ class AnnotationEditorUIManager {
   removeShouldRescale(editor) {
     this.#editorsToRescale.delete(editor);
   }
-  onScaleChanging(_ref4) {
+  onScaleChanging(_ref5) {
     let {
       scale
-    } = _ref4;
+    } = _ref5;
     this.commitOrRemove();
-    this.viewParameters.realScale = scale * _display_utils_js__WEBPACK_IMPORTED_MODULE_23__.PixelsPerInch.PDF_TO_CSS_UNITS;
+    this.viewParameters.realScale = scale * _display_utils_js__WEBPACK_IMPORTED_MODULE_22__.PixelsPerInch.PDF_TO_CSS_UNITS;
     for (const editor of this.#editorsToRescale) {
       editor.onScaleChanging();
     }
   }
-  onRotationChanging(_ref5) {
+  onRotationChanging(_ref6) {
     let {
       pagesRotation
-    } = _ref5;
+    } = _ref6;
     this.commitOrRemove();
     this.viewParameters.rotation = pagesRotation;
   }
@@ -16858,7 +17379,7 @@ class AnnotationEditorUIManager {
     try {
       data = JSON.parse(data);
     } catch (ex) {
-      (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_22__.warn)(`paste: "${ex.message}".`);
+      (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_21__.warn)(`paste: "${ex.message}".`);
       return;
     }
     if (!Array.isArray(data)) {
@@ -16892,7 +17413,7 @@ class AnnotationEditorUIManager {
         mustExec: true
       });
     } catch (ex) {
-      (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_22__.warn)(`paste: "${ex.message}".`);
+      (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_21__.warn)(`paste: "${ex.message}".`);
     }
   }
   keydown(event) {
@@ -16906,8 +17427,8 @@ class AnnotationEditorUIManager {
     }
   }
   #dispatchUpdateStates(details) {
-    const hasChanged = Object.entries(details).some(_ref6 => {
-      let [key, value] = _ref6;
+    const hasChanged = Object.entries(details).some(_ref7 => {
+      let [key, value] = _ref7;
       return this.#previousStates[key] !== value;
     });
     if (hasChanged) {
@@ -16929,7 +17450,7 @@ class AnnotationEditorUIManager {
       this.#addKeyboardManager();
       this.#addCopyPasteListeners();
       this.#dispatchUpdateStates({
-        isEditing: this.#mode !== _shared_util_js__WEBPACK_IMPORTED_MODULE_22__.AnnotationEditorType.NONE,
+        isEditing: this.#mode !== _shared_util_js__WEBPACK_IMPORTED_MODULE_21__.AnnotationEditorType.NONE,
         isEmpty: this.#isEmpty(),
         hasSomethingToUndo: this.#commandManager.hasSomethingToUndo(),
         hasSomethingToRedo: this.#commandManager.hasSomethingToRedo(),
@@ -16984,7 +17505,7 @@ class AnnotationEditorUIManager {
       return;
     }
     this.#mode = mode;
-    if (mode === _shared_util_js__WEBPACK_IMPORTED_MODULE_22__.AnnotationEditorType.NONE) {
+    if (mode === _shared_util_js__WEBPACK_IMPORTED_MODULE_21__.AnnotationEditorType.NONE) {
       this.setEditingState(false);
       this.#disableAll();
       return;
@@ -17026,7 +17547,7 @@ class AnnotationEditorUIManager {
     if (!this.#editorTypes) {
       return;
     }
-    if (type === _shared_util_js__WEBPACK_IMPORTED_MODULE_22__.AnnotationEditorParamsType.CREATE) {
+    if (type === _shared_util_js__WEBPACK_IMPORTED_MODULE_21__.AnnotationEditorParamsType.CREATE) {
       this.currentLayer.addNewEditor();
       return;
     }
@@ -17425,7 +17946,7 @@ class AnnotationEditorUIManager {
     return this.#mode;
   }
   get imageManager() {
-    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_22__.shadow)(this, "imageManager", new ImageManager());
+    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_21__.shadow)(this, "imageManager", new ImageManager());
   }
 }
 
@@ -20336,12 +20857,14 @@ __webpack_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony export */   AnnotationMode: () => (/* reexport safe */ _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.AnnotationMode),
 /* harmony export */   CMapCompressionType: () => (/* reexport safe */ _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.CMapCompressionType),
 /* harmony export */   DOMSVGFactory: () => (/* reexport safe */ _display_display_utils_js__WEBPACK_IMPORTED_MODULE_2__.DOMSVGFactory),
+/* harmony export */   DrawLayer: () => (/* reexport safe */ _display_draw_layer_js__WEBPACK_IMPORTED_MODULE_7__.DrawLayer),
 /* harmony export */   FeatureTest: () => (/* reexport safe */ _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.FeatureTest),
-/* harmony export */   GlobalWorkerOptions: () => (/* reexport safe */ _display_worker_options_js__WEBPACK_IMPORTED_MODULE_7__.GlobalWorkerOptions),
+/* harmony export */   GlobalWorkerOptions: () => (/* reexport safe */ _display_worker_options_js__WEBPACK_IMPORTED_MODULE_8__.GlobalWorkerOptions),
 /* harmony export */   ImageKind: () => (/* reexport safe */ _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.ImageKind),
 /* harmony export */   InvalidPDFException: () => (/* reexport safe */ _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.InvalidPDFException),
 /* harmony export */   MissingPDFException: () => (/* reexport safe */ _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.MissingPDFException),
 /* harmony export */   OPS: () => (/* reexport safe */ _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.OPS),
+/* harmony export */   Outliner: () => (/* reexport safe */ _display_editor_outliner_js__WEBPACK_IMPORTED_MODULE_9__.Outliner),
 /* harmony export */   PDFDataRangeTransport: () => (/* reexport safe */ _display_api_js__WEBPACK_IMPORTED_MODULE_1__.PDFDataRangeTransport),
 /* harmony export */   PDFDateString: () => (/* reexport safe */ _display_display_utils_js__WEBPACK_IMPORTED_MODULE_2__.PDFDateString),
 /* harmony export */   PDFWorker: () => (/* reexport safe */ _display_api_js__WEBPACK_IMPORTED_MODULE_1__.PDFWorker),
@@ -20353,9 +20876,10 @@ __webpack_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony export */   UnexpectedResponseException: () => (/* reexport safe */ _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.UnexpectedResponseException),
 /* harmony export */   Util: () => (/* reexport safe */ _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.Util),
 /* harmony export */   VerbosityLevel: () => (/* reexport safe */ _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.VerbosityLevel),
-/* harmony export */   XfaLayer: () => (/* reexport safe */ _display_xfa_layer_js__WEBPACK_IMPORTED_MODULE_8__.XfaLayer),
+/* harmony export */   XfaLayer: () => (/* reexport safe */ _display_xfa_layer_js__WEBPACK_IMPORTED_MODULE_10__.XfaLayer),
 /* harmony export */   build: () => (/* reexport safe */ _display_api_js__WEBPACK_IMPORTED_MODULE_1__.build),
 /* harmony export */   createValidAbsoluteUrl: () => (/* reexport safe */ _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.createValidAbsoluteUrl),
+/* harmony export */   fetchData: () => (/* reexport safe */ _display_display_utils_js__WEBPACK_IMPORTED_MODULE_2__.fetchData),
 /* harmony export */   getDocument: () => (/* reexport safe */ _display_api_js__WEBPACK_IMPORTED_MODULE_1__.getDocument),
 /* harmony export */   getFilenameFromUrl: () => (/* reexport safe */ _display_display_utils_js__WEBPACK_IMPORTED_MODULE_2__.getFilenameFromUrl),
 /* harmony export */   getPdfFilenameFromUrl: () => (/* reexport safe */ _display_display_utils_js__WEBPACK_IMPORTED_MODULE_2__.getPdfFilenameFromUrl),
@@ -20377,8 +20901,10 @@ __webpack_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony import */ var _display_editor_annotation_editor_layer_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(331);
 /* harmony import */ var _display_editor_tools_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(4812);
 /* harmony import */ var _display_annotation_layer_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(7640);
-/* harmony import */ var _display_worker_options_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(1368);
-/* harmony import */ var _display_xfa_layer_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(8266);
+/* harmony import */ var _display_draw_layer_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(9423);
+/* harmony import */ var _display_worker_options_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(1368);
+/* harmony import */ var _display_editor_outliner_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(7405);
+/* harmony import */ var _display_xfa_layer_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(8266);
 var __webpack_async_dependencies__ = __webpack_handle_async_dependencies__([_display_api_js__WEBPACK_IMPORTED_MODULE_1__]);
 _display_api_js__WEBPACK_IMPORTED_MODULE_1__ = (__webpack_async_dependencies__.then ? (await __webpack_async_dependencies__)() : __webpack_async_dependencies__)[0];
 
@@ -20390,8 +20916,10 @@ _display_api_js__WEBPACK_IMPORTED_MODULE_1__ = (__webpack_async_dependencies__.t
 
 
 
-const pdfjsVersion = '4.0.189';
-const pdfjsBuild = '50f52b43a';
+
+
+const pdfjsVersion = '4.0.269';
+const pdfjsBuild = 'f4b396f6c';
 
 __webpack_async_result__();
 } catch(e) { __webpack_async_result__(e); } });
@@ -21047,6 +21575,7 @@ const AnnotationEditorType = {
   DISABLE: -1,
   NONE: 0,
   FREETEXT: 3,
+  HIGHLIGHT: 9,
   STAMP: 13,
   INK: 15
 };
@@ -21666,8 +22195,14 @@ function stringToPDFString(str) {
     let encoding;
     if (str[0] === "\xFE" && str[1] === "\xFF") {
       encoding = "utf-16be";
+      if (str.length % 2 === 1) {
+        str = str.slice(0, -1);
+      }
     } else if (str[0] === "\xFF" && str[1] === "\xFE") {
       encoding = "utf-16le";
+      if (str.length % 2 === 1) {
+        str = str.slice(0, -1);
+      }
     } else if (str[0] === "\xEF" && str[1] === "\xBB" && str[2] === "\xBF") {
       encoding = "utf-8";
     }
@@ -21677,7 +22212,11 @@ function stringToPDFString(str) {
           fatal: true
         });
         const buffer = stringToBytes(str);
-        return decoder.decode(buffer);
+        const decoded = decoder.decode(buffer);
+        if (!decoded.includes("\x1b")) {
+          return decoded;
+        }
+        return decoded.replaceAll(/\x1b[^\x1b]*(?:\x1b|$)/g, "");
       } catch (ex) {
         warn(`stringToPDFString: "${ex}".`);
       }
@@ -21685,7 +22224,12 @@ function stringToPDFString(str) {
   }
   const strBuf = [];
   for (let i = 0, ii = str.length; i < ii; i++) {
-    const code = PDFStringTranslateTable[str.charCodeAt(i)];
+    const charCode = str.charCodeAt(i);
+    if (charCode === 0x1b) {
+      while (++i < ii && str.charCodeAt(i) !== 0x1b) {}
+      continue;
+    }
+    const code = PDFStringTranslateTable[charCode];
     strBuf.push(code ? String.fromCharCode(code) : str.charAt(i));
   }
   return strBuf.join("");
@@ -21882,7 +22426,7 @@ const AnnotationPrefix = "pdfjs_internal_id_";
 /******/ // Load entry module and return exports
 /******/ // This entry module used 'module' so it can't be inlined
 /******/ var __webpack_exports__ = __webpack_require__(9907);
-/******/ __webpack_exports__ = globalThis.pdfjsLib = await __webpack_exports__;
+/******/ __webpack_exports__ = globalThis.pdfjsLib = await (globalThis.pdfjsLibPromise = __webpack_exports__);
 /******/ var __webpack_exports__AbortException = __webpack_exports__.AbortException;
 /******/ var __webpack_exports__AnnotationEditorLayer = __webpack_exports__.AnnotationEditorLayer;
 /******/ var __webpack_exports__AnnotationEditorParamsType = __webpack_exports__.AnnotationEditorParamsType;
@@ -21892,12 +22436,14 @@ const AnnotationPrefix = "pdfjs_internal_id_";
 /******/ var __webpack_exports__AnnotationMode = __webpack_exports__.AnnotationMode;
 /******/ var __webpack_exports__CMapCompressionType = __webpack_exports__.CMapCompressionType;
 /******/ var __webpack_exports__DOMSVGFactory = __webpack_exports__.DOMSVGFactory;
+/******/ var __webpack_exports__DrawLayer = __webpack_exports__.DrawLayer;
 /******/ var __webpack_exports__FeatureTest = __webpack_exports__.FeatureTest;
 /******/ var __webpack_exports__GlobalWorkerOptions = __webpack_exports__.GlobalWorkerOptions;
 /******/ var __webpack_exports__ImageKind = __webpack_exports__.ImageKind;
 /******/ var __webpack_exports__InvalidPDFException = __webpack_exports__.InvalidPDFException;
 /******/ var __webpack_exports__MissingPDFException = __webpack_exports__.MissingPDFException;
 /******/ var __webpack_exports__OPS = __webpack_exports__.OPS;
+/******/ var __webpack_exports__Outliner = __webpack_exports__.Outliner;
 /******/ var __webpack_exports__PDFDataRangeTransport = __webpack_exports__.PDFDataRangeTransport;
 /******/ var __webpack_exports__PDFDateString = __webpack_exports__.PDFDateString;
 /******/ var __webpack_exports__PDFWorker = __webpack_exports__.PDFWorker;
@@ -21912,6 +22458,7 @@ const AnnotationPrefix = "pdfjs_internal_id_";
 /******/ var __webpack_exports__XfaLayer = __webpack_exports__.XfaLayer;
 /******/ var __webpack_exports__build = __webpack_exports__.build;
 /******/ var __webpack_exports__createValidAbsoluteUrl = __webpack_exports__.createValidAbsoluteUrl;
+/******/ var __webpack_exports__fetchData = __webpack_exports__.fetchData;
 /******/ var __webpack_exports__getDocument = __webpack_exports__.getDocument;
 /******/ var __webpack_exports__getFilenameFromUrl = __webpack_exports__.getFilenameFromUrl;
 /******/ var __webpack_exports__getPdfFilenameFromUrl = __webpack_exports__.getPdfFilenameFromUrl;
@@ -21925,7 +22472,7 @@ const AnnotationPrefix = "pdfjs_internal_id_";
 /******/ var __webpack_exports__shadow = __webpack_exports__.shadow;
 /******/ var __webpack_exports__updateTextLayer = __webpack_exports__.updateTextLayer;
 /******/ var __webpack_exports__version = __webpack_exports__.version;
-/******/ export { __webpack_exports__AbortException as AbortException, __webpack_exports__AnnotationEditorLayer as AnnotationEditorLayer, __webpack_exports__AnnotationEditorParamsType as AnnotationEditorParamsType, __webpack_exports__AnnotationEditorType as AnnotationEditorType, __webpack_exports__AnnotationEditorUIManager as AnnotationEditorUIManager, __webpack_exports__AnnotationLayer as AnnotationLayer, __webpack_exports__AnnotationMode as AnnotationMode, __webpack_exports__CMapCompressionType as CMapCompressionType, __webpack_exports__DOMSVGFactory as DOMSVGFactory, __webpack_exports__FeatureTest as FeatureTest, __webpack_exports__GlobalWorkerOptions as GlobalWorkerOptions, __webpack_exports__ImageKind as ImageKind, __webpack_exports__InvalidPDFException as InvalidPDFException, __webpack_exports__MissingPDFException as MissingPDFException, __webpack_exports__OPS as OPS, __webpack_exports__PDFDataRangeTransport as PDFDataRangeTransport, __webpack_exports__PDFDateString as PDFDateString, __webpack_exports__PDFWorker as PDFWorker, __webpack_exports__PasswordResponses as PasswordResponses, __webpack_exports__PermissionFlag as PermissionFlag, __webpack_exports__PixelsPerInch as PixelsPerInch, __webpack_exports__PromiseCapability as PromiseCapability, __webpack_exports__RenderingCancelledException as RenderingCancelledException, __webpack_exports__UnexpectedResponseException as UnexpectedResponseException, __webpack_exports__Util as Util, __webpack_exports__VerbosityLevel as VerbosityLevel, __webpack_exports__XfaLayer as XfaLayer, __webpack_exports__build as build, __webpack_exports__createValidAbsoluteUrl as createValidAbsoluteUrl, __webpack_exports__getDocument as getDocument, __webpack_exports__getFilenameFromUrl as getFilenameFromUrl, __webpack_exports__getPdfFilenameFromUrl as getPdfFilenameFromUrl, __webpack_exports__getXfaPageViewport as getXfaPageViewport, __webpack_exports__isDataScheme as isDataScheme, __webpack_exports__isPdfFile as isPdfFile, __webpack_exports__noContextMenu as noContextMenu, __webpack_exports__normalizeUnicode as normalizeUnicode, __webpack_exports__renderTextLayer as renderTextLayer, __webpack_exports__setLayerDimensions as setLayerDimensions, __webpack_exports__shadow as shadow, __webpack_exports__updateTextLayer as updateTextLayer, __webpack_exports__version as version };
+/******/ export { __webpack_exports__AbortException as AbortException, __webpack_exports__AnnotationEditorLayer as AnnotationEditorLayer, __webpack_exports__AnnotationEditorParamsType as AnnotationEditorParamsType, __webpack_exports__AnnotationEditorType as AnnotationEditorType, __webpack_exports__AnnotationEditorUIManager as AnnotationEditorUIManager, __webpack_exports__AnnotationLayer as AnnotationLayer, __webpack_exports__AnnotationMode as AnnotationMode, __webpack_exports__CMapCompressionType as CMapCompressionType, __webpack_exports__DOMSVGFactory as DOMSVGFactory, __webpack_exports__DrawLayer as DrawLayer, __webpack_exports__FeatureTest as FeatureTest, __webpack_exports__GlobalWorkerOptions as GlobalWorkerOptions, __webpack_exports__ImageKind as ImageKind, __webpack_exports__InvalidPDFException as InvalidPDFException, __webpack_exports__MissingPDFException as MissingPDFException, __webpack_exports__OPS as OPS, __webpack_exports__Outliner as Outliner, __webpack_exports__PDFDataRangeTransport as PDFDataRangeTransport, __webpack_exports__PDFDateString as PDFDateString, __webpack_exports__PDFWorker as PDFWorker, __webpack_exports__PasswordResponses as PasswordResponses, __webpack_exports__PermissionFlag as PermissionFlag, __webpack_exports__PixelsPerInch as PixelsPerInch, __webpack_exports__PromiseCapability as PromiseCapability, __webpack_exports__RenderingCancelledException as RenderingCancelledException, __webpack_exports__UnexpectedResponseException as UnexpectedResponseException, __webpack_exports__Util as Util, __webpack_exports__VerbosityLevel as VerbosityLevel, __webpack_exports__XfaLayer as XfaLayer, __webpack_exports__build as build, __webpack_exports__createValidAbsoluteUrl as createValidAbsoluteUrl, __webpack_exports__fetchData as fetchData, __webpack_exports__getDocument as getDocument, __webpack_exports__getFilenameFromUrl as getFilenameFromUrl, __webpack_exports__getPdfFilenameFromUrl as getPdfFilenameFromUrl, __webpack_exports__getXfaPageViewport as getXfaPageViewport, __webpack_exports__isDataScheme as isDataScheme, __webpack_exports__isPdfFile as isPdfFile, __webpack_exports__noContextMenu as noContextMenu, __webpack_exports__normalizeUnicode as normalizeUnicode, __webpack_exports__renderTextLayer as renderTextLayer, __webpack_exports__setLayerDimensions as setLayerDimensions, __webpack_exports__shadow as shadow, __webpack_exports__updateTextLayer as updateTextLayer, __webpack_exports__version as version };
 /******/ 
 
 //# sourceMappingURL=pdf.mjs.map

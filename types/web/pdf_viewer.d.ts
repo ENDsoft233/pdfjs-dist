@@ -227,7 +227,7 @@ export class PDFViewer {
     /**
      * @param {number} val - The page number.
      */
-    set currentPageNumber(arg: number);
+    set currentPageNumber(val: number);
     /**
      * @type {number}
      */
@@ -241,7 +241,7 @@ export class PDFViewer {
     /**
      * @param {string} val - The page label.
      */
-    set currentPageLabel(arg: string | null);
+    set currentPageLabel(val: string | null);
     /**
      * @type {string|null} Returns the current page label, or `null` if no page
      *   labels exist.
@@ -250,7 +250,7 @@ export class PDFViewer {
     /**
      * @param {number} val - Scale of the pages in percents.
      */
-    set currentScale(arg: number);
+    set currentScale(val: number);
     /**
      * @type {number}
      */
@@ -258,7 +258,7 @@ export class PDFViewer {
     /**
      * @param val - The scale of the pages (in percent or predefined value).
      */
-    set currentScaleValue(arg: string);
+    set currentScaleValue(val: string);
     /**
      * @type {string}
      */
@@ -266,7 +266,7 @@ export class PDFViewer {
     /**
      * @param {number} rotation - The rotation of the pages (0, 90, 180, 270).
      */
-    set pagesRotation(arg: number);
+    set pagesRotation(rotation: number);
     /**
      * @type {number}
      */
@@ -378,7 +378,7 @@ export class PDFViewer {
      * @param {Promise<OptionalContentConfig>} promise - A promise that is
      *   resolved with an {@link OptionalContentConfig} instance.
      */
-    set optionalContentConfigPromise(arg: Promise<import("../src/display/optional_content_config").OptionalContentConfig | null>);
+    set optionalContentConfigPromise(promise: Promise<import("../src/display/optional_content_config").OptionalContentConfig | null>);
     /**
      * @type {Promise<OptionalContentConfig | null>}
      */
@@ -388,7 +388,7 @@ export class PDFViewer {
      *   laid out within the scrolling container.
      *   The constants from {ScrollMode} should be used.
      */
-    set scrollMode(arg: number);
+    set scrollMode(mode: number);
     /**
      * @type {number} One of the values in {ScrollMode}.
      */
@@ -399,7 +399,7 @@ export class PDFViewer {
      *   even-number pages (unless `SpreadMode.NONE` is used).
      *   The constants from {SpreadMode} should be used.
      */
-    set spreadMode(arg: number);
+    set spreadMode(mode: number);
     /**
      * @type {number} One of the values in {SpreadMode}.
      */
@@ -445,14 +445,46 @@ export class PDFViewer {
     } | undefined): void;
     get containerTopLeft(): number[];
     /**
-     * @param {number} mode - AnnotationEditor mode (None, FreeText, Ink, ...)
+     * @typedef {Object} AnnotationEditorModeOptions
+     * @property {number} mode - The editor mode (none, FreeText, ink, ...).
+     * @property {string|null} [editId] - ID of the existing annotation to edit.
+     * @property {boolean} [isFromKeyboard] - True if the mode change is due to a
+     *   keyboard action.
      */
-    set annotationEditorMode(arg: number);
     /**
-     * @type {number}
+     * @param {AnnotationEditorModeOptions} options
      */
-    get annotationEditorMode(): number;
-    set annotationEditorParams(arg: any);
+    set annotationEditorMode({ mode, editId, isFromKeyboard }: {
+        /**
+         * - The editor mode (none, FreeText, ink, ...).
+         */
+        mode: number;
+        /**
+         * - ID of the existing annotation to edit.
+         */
+        editId?: string | null | undefined;
+        /**
+         * - True if the mode change is due to a
+         * keyboard action.
+         */
+        isFromKeyboard?: boolean | undefined;
+    });
+    get annotationEditorMode(): {
+        /**
+         * - The editor mode (none, FreeText, ink, ...).
+         */
+        mode: number;
+        /**
+         * - ID of the existing annotation to edit.
+         */
+        editId?: string | null | undefined;
+        /**
+         * - True if the mode change is due to a
+         * keyboard action.
+         */
+        isFromKeyboard?: boolean | undefined;
+    };
+    set annotationEditorParams({ type, value }: any);
     refresh(noUpdate?: boolean, updateArgs?: any): void;
     #private;
 }
