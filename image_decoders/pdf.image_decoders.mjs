@@ -82,6 +82,7 @@ const AnnotationEditorType = {
   DISABLE: -1,
   NONE: 0,
   FREETEXT: 3,
+  HIGHLIGHT: 9,
   STAMP: 13,
   INK: 15
 };
@@ -698,8 +699,14 @@ function util_stringToPDFString(str) {
     let encoding;
     if (str[0] === "\xFE" && str[1] === "\xFF") {
       encoding = "utf-16be";
+      if (str.length % 2 === 1) {
+        str = str.slice(0, -1);
+      }
     } else if (str[0] === "\xFF" && str[1] === "\xFE") {
       encoding = "utf-16le";
+      if (str.length % 2 === 1) {
+        str = str.slice(0, -1);
+      }
     } else if (str[0] === "\xEF" && str[1] === "\xBB" && str[2] === "\xBF") {
       encoding = "utf-8";
     }
@@ -709,7 +716,11 @@ function util_stringToPDFString(str) {
           fatal: true
         });
         const buffer = stringToBytes(str);
-        return decoder.decode(buffer);
+        const decoded = decoder.decode(buffer);
+        if (!decoded.includes("\x1b")) {
+          return decoded;
+        }
+        return decoded.replaceAll(/\x1b[^\x1b]*(?:\x1b|$)/g, "");
       } catch (ex) {
         util_warn(`stringToPDFString: "${ex}".`);
       }
@@ -717,7 +728,12 @@ function util_stringToPDFString(str) {
   }
   const strBuf = [];
   for (let i = 0, ii = str.length; i < ii; i++) {
-    const code = PDFStringTranslateTable[str.charCodeAt(i)];
+    const charCode = str.charCodeAt(i);
+    if (charCode === 0x1b) {
+      while (++i < ii && str.charCodeAt(i) !== 0x1b) {}
+      continue;
+    }
+    const code = PDFStringTranslateTable[charCode];
     strBuf.push(code ? String.fromCharCode(code) : str.charAt(i));
   }
   return strBuf.join("");
@@ -5095,6 +5111,9 @@ class JpegImage {
       fileMarker = readUint16(data, offset);
       offset += 2;
     }
+    if (!frame) {
+      throw new JpegError("JpegImage.parse - no frame data found.");
+    }
     this.width = frame.samplesPerLine;
     this.height = frame.scanLines;
     this.jfif = jfif;
@@ -7240,8 +7259,8 @@ class ReversibleTransform extends Transform {
 
 
 
-const pdfjsVersion = '4.0.189';
-const pdfjsBuild = '50f52b43a';
+const pdfjsVersion = '4.0.269';
+const pdfjsBuild = 'f4b396f6c';
 
 var __webpack_exports__Jbig2Image = __webpack_exports__.Jbig2Image;
 var __webpack_exports__JpegImage = __webpack_exports__.JpegImage;

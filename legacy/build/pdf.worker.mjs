@@ -1450,9 +1450,9 @@ module.exports = function (obj) {
 var check = function (it) {
  return it && it.Math === Math && it;
 };
-module.exports = check(typeof globalThis == 'object' && globalThis) || check(typeof window == 'object' && window) || check(typeof self == 'object' && self) || check(typeof global == 'object' && global) || (function () {
+module.exports = check(typeof globalThis == 'object' && globalThis) || check(typeof window == 'object' && window) || check(typeof self == 'object' && self) || check(typeof global == 'object' && global) || check(typeof this == 'object' && this) || (function () {
  return this;
-}()) || this || Function('return this')();
+}()) || Function('return this')();
 
 /***/ }),
 
@@ -2870,10 +2870,10 @@ var store = __webpack_require__(7542);
 (module.exports = function (key, value) {
  return store[key] || (store[key] = value !== undefined ? value : {});
 })('versions', []).push({
- version: '3.33.2',
+ version: '3.33.3',
  mode: IS_PURE ? 'pure' : 'global',
  copyright: '© 2014-2023 Denis Pushkarev (zloirock.ru)',
- license: 'https://github.com/zloirock/core-js/blob/v3.33.2/LICENSE',
+ license: 'https://github.com/zloirock/core-js/blob/v3.33.3/LICENSE',
  source: 'https://github.com/zloirock/core-js'
 });
 
@@ -4511,6 +4511,7 @@ const AnnotationEditorType = {
   DISABLE: -1,
   NONE: 0,
   FREETEXT: 3,
+  HIGHLIGHT: 9,
   STAMP: 13,
   INK: 15
 };
@@ -5130,8 +5131,14 @@ function stringToPDFString(str) {
     let encoding;
     if (str[0] === "\xFE" && str[1] === "\xFF") {
       encoding = "utf-16be";
+      if (str.length % 2 === 1) {
+        str = str.slice(0, -1);
+      }
     } else if (str[0] === "\xFF" && str[1] === "\xFE") {
       encoding = "utf-16le";
+      if (str.length % 2 === 1) {
+        str = str.slice(0, -1);
+      }
     } else if (str[0] === "\xEF" && str[1] === "\xBB" && str[2] === "\xBF") {
       encoding = "utf-8";
     }
@@ -5141,7 +5148,11 @@ function stringToPDFString(str) {
           fatal: true
         });
         const buffer = stringToBytes(str);
-        return decoder.decode(buffer);
+        const decoded = decoder.decode(buffer);
+        if (!decoded.includes("\x1b")) {
+          return decoded;
+        }
+        return decoded.replaceAll(/\x1b[^\x1b]*(?:\x1b|$)/g, "");
       } catch (ex) {
         warn(`stringToPDFString: "${ex}".`);
       }
@@ -5149,7 +5160,12 @@ function stringToPDFString(str) {
   }
   const strBuf = [];
   for (let i = 0, ii = str.length; i < ii; i++) {
-    const code = PDFStringTranslateTable[str.charCodeAt(i)];
+    const charCode = str.charCodeAt(i);
+    if (charCode === 0x1b) {
+      while (++i < ii && str.charCodeAt(i) !== 0x1b) {}
+      continue;
+    }
+    const code = PDFStringTranslateTable[charCode];
     strBuf.push(code ? String.fromCharCode(code) : str.charAt(i));
   }
   return strBuf.join("");
@@ -11800,6 +11816,9 @@ class JpegImage {
       }
       fileMarker = readUint16(data, offset);
       offset += 2;
+    }
+    if (!frame) {
+      throw new JpegError("JpegImage.parse - no frame data found.");
     }
     this.width = frame.samplesPerLine;
     this.height = frame.scanLines;
@@ -28808,6 +28827,12 @@ function signedInt16(b0, b1) {
   const value = (b0 << 8) + b1;
   return value & 1 << 15 ? value - 0x10000 : value;
 }
+function writeUint32(bytes, index, value) {
+  bytes[index + 3] = value & 0xff;
+  bytes[index + 2] = value >>> 8;
+  bytes[index + 1] = value >>> 16;
+  bytes[index] = value >>> 24;
+}
 function int32(b0, b1, b2, b3) {
   return (b0 << 24) + (b1 << 16) + (b2 << 8) + b3;
 }
@@ -30513,8 +30538,18 @@ class Font {
       throw new FormatError('Required "maxp" table is not found');
     }
     font.pos = (font.start || 0) + tables.maxp.offset;
-    const version = font.getInt32();
+    let version = font.getInt32();
     const numGlyphs = font.getUint16();
+    if (version !== 0x00010000 && version !== 0x00005000) {
+      if (tables.maxp.length === 6) {
+        version = 0x0005000;
+      } else if (tables.maxp.length >= 32) {
+        version = 0x00010000;
+      } else {
+        throw new FormatError(`"maxp" table has a wrong version number`);
+      }
+      writeUint32(tables.maxp.data, 0, version);
+    }
     if (properties.scaleFactors?.length === numGlyphs && isTrueType) {
       const {
         scaleFactors
@@ -30557,7 +30592,7 @@ class Font {
     }
     let maxFunctionDefs = 0;
     let maxSizeOfInstructions = 0;
-    if (version >= 0x00010000 && tables.maxp.length >= 22) {
+    if (version >= 0x00010000 && tables.maxp.length >= 32) {
       font.pos += 8;
       const maxZones = font.getUint16();
       if (maxZones > 2) {
@@ -30587,7 +30622,7 @@ class Font {
       const isGlyphLocationsLong = int16(tables.head.data[50], tables.head.data[51]);
       const glyphsInfo = sanitizeGlyphLocations(tables.loca, tables.glyf, numGlyphs, isGlyphLocationsLong, hintsValid, dupFirstEntry, maxSizeOfInstructions);
       missingGlyphs = glyphsInfo.missingGlyphs;
-      if (version >= 0x00010000 && tables.maxp.length >= 22) {
+      if (version >= 0x00010000 && tables.maxp.length >= 32) {
         tables.maxp.data[26] = glyphsInfo.maxSizeOfInstructions >> 8;
         tables.maxp.data[27] = glyphsInfo.maxSizeOfInstructions & 255;
       }
@@ -34528,6 +34563,9 @@ class MurmurHash3_64 {
 }
 
 ;// CONCATENATED MODULE: ./src/core/operator_list.js
+function _defineProperty(obj, key, value) { key = _toPropertyKey(key); if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+function _toPropertyKey(arg) { var key = _toPrimitive(arg, "string"); return typeof key === "symbol" ? key : String(key); }
+function _toPrimitive(input, hint) { if (typeof input !== "object" || input === null) return input; var prim = input[Symbol.toPrimitive]; if (prim !== undefined) { var res = prim.call(input, hint || "default"); if (typeof res !== "object") return res; throw new TypeError("@@toPrimitive must return a primitive value."); } return (hint === "string" ? String : Number)(input); }
 
 
 
@@ -34955,7 +34993,7 @@ class QueueOptimizer extends NullOptimizer {
 }
 class OperatorList {
   static CHUNK_SIZE = 1000;
-  static CHUNK_SIZE_ABOUT = this.CHUNK_SIZE - 5;
+  static #_ = _defineProperty(this, "CHUNK_SIZE_ABOUT", this.CHUNK_SIZE - 5);
   constructor() {
     let intent = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
     let streamSink = arguments.length > 1 ? arguments[1] : undefined;
@@ -36155,7 +36193,7 @@ class PartialEvaluator {
       if (!response.ok) {
         warn(`fetchStandardFontData: failed to fetch file "${url}" with "${response.statusText}".`);
       } else {
-        data = await response.arrayBuffer();
+        data = new Uint8Array(await response.arrayBuffer());
       }
     } else {
       try {
@@ -55791,6 +55829,9 @@ class AnnotationFactory {
             baseFontRef
           }));
           break;
+        case AnnotationEditorType.HIGHLIGHT:
+          promises.push(HighlightAnnotation.createNewAnnotation(xref, annotation, dependencies));
+          break;
         case AnnotationEditorType.INK:
           promises.push(InkAnnotation.createNewAnnotation(xref, annotation, dependencies));
           break;
@@ -55852,6 +55893,11 @@ class AnnotationFactory {
           promises.push(FreeTextAnnotation.createNewPrintAnnotation(annotationGlobals, xref, annotation, {
             evaluator,
             task,
+            evaluatorOptions: options
+          }));
+          break;
+        case AnnotationEditorType.HIGHLIGHT:
+          promises.push(HighlightAnnotation.createNewPrintAnnotation(annotationGlobals, xref, annotation, {
             evaluatorOptions: options
           }));
           break;
@@ -58552,6 +58598,81 @@ class HighlightAnnotation extends MarkupAnnotation {
       this.data.popupRef = null;
     }
   }
+  static createNewDict(annotation, xref, _ref6) {
+    let {
+      apRef,
+      ap
+    } = _ref6;
+    const {
+      color,
+      opacity,
+      rect,
+      rotation,
+      user,
+      quadPoints
+    } = annotation;
+    const highlight = new Dict(xref);
+    highlight.set("Type", Name.get("Annot"));
+    highlight.set("Subtype", Name.get("Highlight"));
+    highlight.set("CreationDate", `D:${getModificationDate()}`);
+    highlight.set("Rect", rect);
+    highlight.set("F", 4);
+    highlight.set("Border", [0, 0, 0]);
+    highlight.set("Rotate", rotation);
+    highlight.set("QuadPoints", quadPoints);
+    highlight.set("C", Array.from(color, c => c / 255));
+    highlight.set("CA", opacity);
+    if (user) {
+      highlight.set("T", isAscii(user) ? user : stringToUTF16String(user, true));
+    }
+    if (apRef || ap) {
+      const n = new Dict(xref);
+      highlight.set("AP", n);
+      n.set("N", apRef || ap);
+    }
+    return highlight;
+  }
+  static async createNewAppearanceStream(annotation, xref, params) {
+    const {
+      color,
+      rect,
+      outlines,
+      opacity
+    } = annotation;
+    const appearanceBuffer = [`${getPdfColor(color, true)}`, "/R0 gs"];
+    const buffer = [];
+    for (const outline of outlines) {
+      buffer.length = 0;
+      buffer.push(`${numberToString(outline[0])} ${numberToString(outline[1])} m`);
+      for (let i = 2, ii = outline.length; i < ii; i += 2) {
+        buffer.push(`${numberToString(outline[i])} ${numberToString(outline[i + 1])} l`);
+      }
+      buffer.push("h");
+      appearanceBuffer.push(buffer.join("\n"));
+    }
+    appearanceBuffer.push("f*");
+    const appearance = appearanceBuffer.join("\n");
+    const appearanceStreamDict = new Dict(xref);
+    appearanceStreamDict.set("FormType", 1);
+    appearanceStreamDict.set("Subtype", Name.get("Form"));
+    appearanceStreamDict.set("Type", Name.get("XObject"));
+    appearanceStreamDict.set("BBox", rect);
+    appearanceStreamDict.set("Length", appearance.length);
+    const resources = new Dict(xref);
+    const extGState = new Dict(xref);
+    resources.set("ExtGState", extGState);
+    appearanceStreamDict.set("Resources", resources);
+    const r0 = new Dict(xref);
+    extGState.set("R0", r0);
+    r0.set("BM", Name.get("Multiply"));
+    if (opacity !== 1) {
+      r0.set("ca", opacity);
+      r0.set("Type", Name.get("ExtGState"));
+    }
+    const ap = new StringStream(appearance);
+    ap.dict = appearanceStreamDict;
+    return ap;
+  }
 }
 class UnderlineAnnotation extends MarkupAnnotation {
   constructor(params) {
@@ -58722,11 +58843,11 @@ class StampAnnotation extends MarkupAnnotation {
       height
     };
   }
-  static createNewDict(annotation, xref, _ref6) {
+  static createNewDict(annotation, xref, _ref7) {
     let {
       apRef,
       ap
-    } = _ref6;
+    } = _ref7;
     const {
       rect,
       rotation,
@@ -60879,22 +61000,55 @@ class PDFDocument {
     let manuallyTriggered = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
     return this.catalog ? this.catalog.cleanup(manuallyTriggered) : clearGlobalCaches();
   }
-  #collectFieldObjects(name, fieldRef, promises, annotationGlobals) {
-    const field = this.xref.fetchIfRef(fieldRef);
+  async #collectFieldObjects(name, fieldRef, promises, annotationGlobals, visitedRefs) {
+    const {
+      xref
+    } = this;
+    if (!(fieldRef instanceof Ref) || visitedRefs.has(fieldRef)) {
+      return;
+    }
+    visitedRefs.put(fieldRef);
+    const field = await xref.fetchAsync(fieldRef);
+    if (!(field instanceof Dict)) {
+      return;
+    }
     if (field.has("T")) {
-      const partName = stringToPDFString(field.get("T"));
+      const partName = stringToPDFString(await field.getAsync("T"));
       name = name === "" ? partName : `${name}.${partName}`;
+    } else {
+      let obj = field;
+      while (true) {
+        obj = obj.getRaw("Parent");
+        if (obj instanceof Ref) {
+          if (visitedRefs.has(obj)) {
+            break;
+          }
+          obj = await xref.fetchAsync(obj);
+        }
+        if (!(obj instanceof Dict)) {
+          break;
+        }
+        if (obj.has("T")) {
+          const partName = stringToPDFString(await obj.getAsync("T"));
+          name = name === "" ? partName : `${name}.${partName}`;
+          break;
+        }
+      }
     }
     if (!promises.has(name)) {
       promises.set(name, []);
     }
-    promises.get(name).push(AnnotationFactory.create(this.xref, fieldRef, annotationGlobals, this._localIdFactory, true, null).then(annotation => annotation?.getFieldObject()).catch(function (reason) {
+    promises.get(name).push(AnnotationFactory.create(xref, fieldRef, annotationGlobals, null, true, null).then(annotation => annotation?.getFieldObject()).catch(function (reason) {
       warn(`#collectFieldObjects: "${reason}".`);
       return null;
     }));
-    if (field.has("Kids")) {
-      for (const kid of field.get("Kids")) {
-        this.#collectFieldObjects(name, kid, promises, annotationGlobals);
+    if (!field.has("Kids")) {
+      return;
+    }
+    const kids = await field.getAsync("Kids");
+    if (Array.isArray(kids)) {
+      for (const kid of kids) {
+        await this.#collectFieldObjects(name, kid, promises, annotationGlobals, visitedRefs);
       }
     }
   }
@@ -60902,14 +61056,16 @@ class PDFDocument {
     if (!this.formInfo.hasFields) {
       return shadow(this, "fieldObjects", Promise.resolve(null));
     }
-    const promise = this.pdfManager.ensureDoc("annotationGlobals").then(async annotationGlobals => {
+    const promise = Promise.all([this.pdfManager.ensureDoc("annotationGlobals"), this.pdfManager.ensureCatalog("acroForm")]).then(async _ref8 => {
+      let [annotationGlobals, acroForm] = _ref8;
       if (!annotationGlobals) {
         return null;
       }
+      const visitedRefs = new RefSet();
       const allFields = Object.create(null);
       const fieldPromises = new Map();
-      for (const fieldRef of this.catalog.acroForm.get("Fields")) {
-        this.#collectFieldObjects("", fieldRef, fieldPromises, annotationGlobals);
+      for (const fieldRef of await acroForm.getAsync("Fields")) {
+        await this.#collectFieldObjects("", fieldRef, fieldPromises, annotationGlobals, visitedRefs);
       }
       const allPromises = [];
       for (const [name, promises] of fieldPromises) {
@@ -61713,7 +61869,7 @@ class WorkerMessageHandler {
       docId,
       apiVersion
     } = docParams;
-    const workerVersion = '4.0.189';
+    const workerVersion = '4.0.269';
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match ` + `the Worker version "${workerVersion}".`);
     }
@@ -62288,8 +62444,8 @@ if (typeof window === "undefined" && !isNodeJS && typeof self !== "undefined" &&
 
 ;// CONCATENATED MODULE: ./src/pdf.worker.js
 
-const pdfjsVersion = '4.0.189';
-const pdfjsBuild = '50f52b43a';
+const pdfjsVersion = '4.0.269';
+const pdfjsBuild = 'f4b396f6c';
 
 })();
 

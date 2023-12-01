@@ -44,6 +44,7 @@ export namespace AnnotationEditorType {
     let DISABLE: number;
     let NONE: number;
     let FREETEXT: number;
+    let HIGHLIGHT: number;
     let STAMP: number;
     let INK: number;
 }
@@ -103,7 +104,8 @@ export namespace AnnotationType {
     export let CIRCLE: number;
     export let POLYGON: number;
     export let POLYLINE: number;
-    export let HIGHLIGHT: number;
+    let HIGHLIGHT_1: number;
+    export { HIGHLIGHT_1 as HIGHLIGHT };
     let UNDERLINE_1: number;
     export { UNDERLINE_1 as UNDERLINE };
     export let SQUIGGLY: number;

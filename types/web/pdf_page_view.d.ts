@@ -124,7 +124,7 @@ export class PDFPageView implements IRenderableView {
     xfaLayer: XfaLayerBuilder | null;
     structTreeLayer: any;
     div: HTMLDivElement;
-    set renderingState(arg: number);
+    set renderingState(state: number);
     get renderingState(): number;
     setPdfPage(pdfPage: any): void;
     destroy(): void;
